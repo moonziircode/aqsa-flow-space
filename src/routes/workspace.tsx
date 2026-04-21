@@ -11,13 +11,16 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import { Plus, KanbanSquare } from "lucide-react";
+import { KanbanSquare, LayoutList, CalendarDays, Columns3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Task, Partner } from "@/lib/types";
 import { Column } from "@/components/kanban/Column";
 import { TaskCard } from "@/components/kanban/TaskCard";
 import { TaskDetailDrawer } from "@/components/kanban/TaskDetailDrawer";
+import { TaskListView } from "@/components/workspace/TaskListView";
+import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
 import { STATUSES } from "@/lib/pills";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/workspace")({
@@ -36,6 +39,7 @@ function WorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [view, setView] = useState<"kanban" | "list" | "calendar">("kanban");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -183,38 +187,74 @@ function WorkspacePage() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
           <KanbanSquare size={12} /> Workspace
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Field Tasks</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Drag cards across columns. Click any tag to change priority or status.
-        </p>
-      </div>
-
-      {/* Board */}
-      <div className="flex-1 overflow-x-auto">
-        <div className="min-w-max px-4 md:px-8 py-6">
-          {loading ? (
-            <div className="flex gap-4">
-              {STATUSES.map((s) => (
-                <div key={s} className="w-72 space-y-2">
-                  <div className="h-6 w-24 bg-muted animate-pulse rounded" />
-                  {[0, 1, 2].map((i) => <div key={i} className="h-20 bg-muted animate-pulse rounded" />)}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-              <div className="flex gap-4">
-                {STATUSES.map((s) => (
-                  <Column key={s} status={s} tasks={grouped[s] ?? []} onOpen={setOpenTask} onUpdate={updateTask} onAdd={addTask} />
-                ))}
-              </div>
-              <DragOverlay>
-                {activeTask && <TaskCard task={activeTask} onOpen={() => {}} onUpdate={() => {}} isOverlay />}
-              </DragOverlay>
-            </DndContext>
-          )}
+        <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Field Tasks</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Drag cards across columns. Click any tag to change priority or status.
+            </p>
+          </div>
+          <div className="inline-flex items-center bg-[var(--sidebar-bg)] border border-border rounded-lg p-0.5 shadow-sm">
+            {([
+              { id: "kanban", label: "Kanban", Icon: Columns3 },
+              { id: "list", label: "List", Icon: LayoutList },
+              { id: "calendar", label: "Calendar", Icon: CalendarDays },
+            ] as const).map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors",
+                  view === id ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon size={13} /> {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Views */}
+      {view === "kanban" && (
+        <div className="flex-1 overflow-x-auto">
+          <div className="min-w-max px-4 md:px-8 py-6">
+            {loading ? (
+              <div className="flex gap-4">
+                {STATUSES.map((s) => (
+                  <div key={s} className="w-72 space-y-2">
+                    <div className="h-6 w-24 bg-muted animate-pulse rounded" />
+                    {[0, 1, 2].map((i) => <div key={i} className="h-20 bg-muted animate-pulse rounded" />)}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                <div className="flex gap-4">
+                  {STATUSES.map((s) => (
+                    <Column key={s} status={s} tasks={grouped[s] ?? []} onOpen={setOpenTask} onUpdate={updateTask} onAdd={addTask} />
+                  ))}
+                </div>
+                <DragOverlay>
+                  {activeTask && <TaskCard task={activeTask} onOpen={() => {}} onUpdate={() => {}} isOverlay />}
+                </DragOverlay>
+              </DndContext>
+            )}
+          </div>
+        </div>
+      )}
+
+      {view === "list" && (
+        <div className="px-6 md:px-12 py-6 overflow-x-auto">
+          <TaskListView tasks={tasks} partners={partners} onOpen={setOpenTask} onUpdate={updateTask} onDelete={deleteTask} />
+        </div>
+      )}
+
+      {view === "calendar" && (
+        <div className="px-6 md:px-12 py-6">
+          <WeeklyCalendar tasks={tasks} onOpen={setOpenTask} />
+        </div>
+      )}
 
       <TaskDetailDrawer task={openTask} partners={partners} onClose={() => setOpenTask(null)} onUpdate={updateTask} onDelete={deleteTask} />
     </div>

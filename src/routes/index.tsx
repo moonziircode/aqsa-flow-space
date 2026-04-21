@@ -8,6 +8,9 @@ import type { Task, Partner, Reimbursement } from "@/lib/types";
 import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { priorityPill, statusPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
+import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
+import { TaskDetailDrawer } from "@/components/kanban/TaskDetailDrawer";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,20 +28,35 @@ function Dashboard() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [reimb, setReimb] = useState<Reimbursement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openTask, setOpenTask] = useState<Task | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const [t, p, r] = await Promise.all([
-        supabase.from("tasks").select("*, partner:partners(*)").order("due_date", { ascending: true }),
-        supabase.from("partners").select("*"),
-        supabase.from("admin_reimbursements").select("*"),
-      ]);
-      setTasks((t.data as any) || []);
-      setPartners((p.data as any) || []);
-      setReimb((r.data as any) || []);
-      setLoading(false);
-    })();
-  }, []);
+  useEffect(() => { refresh(); }, []);
+  const refresh = async () => {
+    const [t, p, r] = await Promise.all([
+      supabase.from("tasks").select("*, partner:partners(*)").order("due_date", { ascending: true }),
+      supabase.from("partners").select("*"),
+      supabase.from("admin_reimbursements").select("*"),
+    ]);
+    setTasks((t.data as any) || []);
+    setPartners((p.data as any) || []);
+    setReimb((r.data as any) || []);
+    setLoading(false);
+  };
+
+  const updateTask = async (id: string, patch: Partial<Task>) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    const { partner, ...dbPatch } = patch as any;
+    const { error } = await supabase.from("tasks").update(dbPatch).eq("id", id);
+    if (error) { toast.error("Save failed"); refresh(); return; }
+    if (openTask?.id === id) setOpenTask((o) => (o ? { ...o, ...patch } : o));
+  };
+
+  const deleteTask = async (id: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setOpenTask(null);
+    await supabase.from("tasks").delete().eq("id", id);
+    toast.success("Task deleted");
+  };
 
   const todayTasks = tasks.filter((t) => t.due_date && isToday(parseISO(t.due_date)) && t.status !== "Done");
   const doneCount = tasks.filter((t) => t.status === "Done").length;
@@ -96,6 +114,21 @@ function Dashboard() {
         <Metric icon={<Sparkles size={14} />} label="Active tasks" value={String(tasks.filter(t => t.status !== "Done").length)} hint={`of ${totalCount}`} />
       </div>
 
+      {/* Weekly calendar */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">This Week</h2>
+          <Link to="/workspace" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+            Full workspace <ArrowRight size={12} />
+          </Link>
+        </div>
+        {loading ? (
+          <div className="h-48 rounded-xl bg-muted animate-pulse" />
+        ) : (
+          <WeeklyCalendar tasks={tasks} onOpen={setOpenTask} />
+        )}
+      </div>
+
       {/* Today's tasks - inline DB */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
@@ -141,6 +174,8 @@ function Dashboard() {
           )}
         </div>
       </div>
+
+      <TaskDetailDrawer task={openTask} partners={partners} onClose={() => setOpenTask(null)} onUpdate={updateTask} onDelete={deleteTask} />
     </div>
   );
 }
