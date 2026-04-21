@@ -14,7 +14,161 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_reimbursements: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          form_type: string
+          id: string
+          receipt_image_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          form_type?: string
+          id?: string
+          receipt_image_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          form_type?: string
+          id?: string
+          receipt_image_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      market_insights: {
+        Row: {
+          competitor_name: string
+          created_at: string
+          description: string | null
+          id: string
+          strategy_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          competitor_name: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          strategy_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          competitor_name?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          strategy_type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      partners: {
+        Row: {
+          area: string | null
+          awb_avg: number | null
+          blank_spot_status: string | null
+          created_at: string
+          dropoff_rate_opcode_59: number | null
+          exception_rate_opcode_70: number | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          area?: string | null
+          awb_avg?: number | null
+          blank_spot_status?: string | null
+          created_at?: string
+          dropoff_rate_opcode_59?: number | null
+          exception_rate_opcode_70?: number | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          area?: string | null
+          awb_avg?: number | null
+          blank_spot_status?: string | null
+          created_at?: string
+          dropoff_rate_opcode_59?: number | null
+          exception_rate_opcode_70?: number | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          checklist: Json | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          image_path: string | null
+          location_lat_lng: string | null
+          partner_id: string | null
+          position: number | null
+          priority: string
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          image_path?: string | null
+          location_lat_lng?: string | null
+          partner_id?: string | null
+          position?: number | null
+          priority?: string
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          image_path?: string | null
+          location_lat_lng?: string | null
+          partner_id?: string | null
+          position?: number | null
+          priority?: string
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
