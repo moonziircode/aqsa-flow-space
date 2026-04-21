@@ -5,6 +5,7 @@ import type { Task, Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { PillSelect } from "@/components/ui-extras/PillSelect";
+import { PartnerCombobox } from "@/components/ui-extras/PartnerCombobox";
 import { priorityPill, statusPill, typePill, PRIORITIES, STATUSES, TYPES } from "@/lib/pills";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -141,18 +142,11 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
             </div>
             <div className="text-muted-foreground py-1">Partner</div>
             <div>
-              <select
-                value={task.partner_id ?? ""}
-                onChange={(e) => onUpdate(task.id, { partner_id: e.target.value || null })}
-                className="text-sm bg-transparent rounded px-1 -mx-1 hover:bg-[var(--hover-bg)] outline-none cursor-pointer"
-              >
-                <option value="">— None —</option>
-                {partners.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <PartnerCombobox
+                value={task.partner_id}
+                partners={partners}
+                onChange={(id) => onUpdate(task.id, { partner_id: id })}
+              />
             </div>
           </div>
 

@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Users, Plus, Trash2 } from "lucide-react";
+import { Users, Plus, Trash2, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Partner } from "@/lib/types";
 import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { PillSelect } from "@/components/ui-extras/PillSelect";
 import { blankSpotPill } from "@/lib/pills";
+import { PartnerImportDialog } from "@/components/workspace/PartnerImportDialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/partners")({
@@ -23,6 +24,7 @@ const SPOT_OPTS = ["covered", "partial", "blank"] as const;
 function PartnersPage() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -60,9 +62,17 @@ function PartnersPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Partners</h1>
         </div>
-        <button onClick={add} className="inline-flex items-center gap-1 text-sm px-3 py-1.5 border border-border rounded hover:bg-[var(--hover-bg)]">
-          <Plus size={14} /> New partner
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setImportOpen(true)}
+            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 border border-border rounded-md hover:bg-[var(--hover-bg)] shadow-sm"
+          >
+            <Upload size={14} /> Import (CSV/XLSX)
+          </button>
+          <button onClick={add} className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 bg-foreground text-background rounded-md hover:opacity-90 shadow-sm">
+            <Plus size={14} /> New partner
+          </button>
+        </div>
       </div>
 
       <div className="border border-border rounded-md overflow-hidden overflow-x-auto">
@@ -105,6 +115,8 @@ function PartnersPage() {
           </tbody>
         </table>
       </div>
+
+      <PartnerImportDialog open={importOpen} onClose={() => setImportOpen(false)} onImported={load} />
     </div>
   );
 }
