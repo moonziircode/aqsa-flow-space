@@ -52,7 +52,6 @@ function RootComponent() {
   return (
     <>
       <AppShell />
-      <Outlet />
       <Toaster position="top-right" />
     </>
   );
