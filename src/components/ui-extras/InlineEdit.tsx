@@ -72,7 +72,7 @@ export function InlineEdit({ value, onSave, className, placeholder, multiline, a
     );
   }
 
-  const Tag = as as keyof JSX.IntrinsicElements;
+  const Tag: any = as;
   return (
     <Tag
       onClick={() => setEditing(true)}
