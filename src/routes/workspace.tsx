@@ -40,7 +40,9 @@ function WorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openTask, setOpenTask] = useState<Task | null>(null);
-  const [view, setView] = useState<"kanban" | "list" | "calendar">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "calendar" | "archive">("kanban");
+  const [search, setSearch] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -61,16 +63,48 @@ function WorkspacePage() {
     setLoading(false);
   };
 
+  // Auto-archive: tasks marked Done are hidden from active views after 7 days
+  // (based on updated_at — when status was last touched).
+  const isArchived = (t: Task) => {
+    if (t.status !== "Done") return false;
+    const ref = t.updated_at ?? t.created_at;
+    if (!ref) return false;
+    return differenceInDays(new Date(), parseISO(ref)) >= 7;
+  };
+
+  const matchesSearch = (t: Task) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      t.title?.toLowerCase().includes(q) ||
+      (t.description ?? "").toLowerCase().includes(q) ||
+      (t.type ?? "").toLowerCase().includes(q) ||
+      (t.status ?? "").toLowerCase().includes(q) ||
+      (t.priority ?? "").toLowerCase().includes(q) ||
+      (t.partner?.name ?? "").toLowerCase().includes(q) ||
+      (t.partner?.area ?? "").toLowerCase().includes(q)
+    );
+  };
+
+  const activeTasks = useMemo(
+    () => tasks.filter((t) => !isArchived(t) && matchesSearch(t)),
+    [tasks, search]
+  );
+  const archivedTasks = useMemo(
+    () => tasks.filter((t) => isArchived(t) && matchesSearch(t)),
+    [tasks, search]
+  );
+
   const grouped = useMemo(() => {
     const map: Record<string, Task[]> = {};
     STATUSES.forEach((s) => (map[s] = []));
-    tasks.forEach((t) => {
+    activeTasks.forEach((t) => {
       if (!map[t.status]) map[t.status] = [];
       map[t.status].push(t);
     });
     Object.values(map).forEach((arr) => arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0)));
     return map;
-  }, [tasks]);
+  }, [activeTasks]);
 
   const updateTask = async (id: string, patch: Partial<Task>) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -98,6 +132,30 @@ function WorkspacePage() {
       .insert({ title: "Untitled task", status, priority: "Medium", type: "Daily", position: (grouped[status]?.length ?? 0) })
       .select("*, partner:partners(*)")
       .single();
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setTasks((prev) => [...prev, data as any]);
+    setOpenTask(data as any);
+  };
+
+  const addTaskFromHeader = async () => {
+    setAdding(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        title: "Untitled task",
+        status: "To Do",
+        priority: "Medium",
+        type: "Daily",
+        due_date: today,
+        position: grouped["To Do"]?.length ?? 0,
+      })
+      .select("*, partner:partners(*)")
+      .single();
+    setAdding(false);
     if (error) {
       toast.error(error.message);
       return;
