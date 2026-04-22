@@ -4,10 +4,10 @@ import { Plus, Trash2, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Insight, Partner } from "@/lib/types";
-import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { blankSpotPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CompetitorDetailDrawer } from "@/components/strategy/CompetitorDetailDrawer";
 
 export const Route = createFileRoute("/strategy")({
   head: () => ({
@@ -23,6 +23,7 @@ function StrategyPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openInsight, setOpenInsight] = useState<Insight | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -39,6 +40,7 @@ function StrategyPage() {
   const updateInsight = async (id: string, patch: Partial<Insight>) => {
     setInsights((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     await supabase.from("market_insights").update(patch).eq("id", id);
+    setOpenInsight((o) => (o && o.id === id ? { ...o, ...patch } : o));
   };
 
   const addInsight = async () => {
@@ -47,7 +49,10 @@ function StrategyPage() {
       .insert({ competitor_name: "New competitor", strategy_type: "Pricing", description: "" })
       .select()
       .single();
-    if (data) setInsights((prev) => [data as any, ...prev]);
+    if (data) {
+      setInsights((prev) => [data as any, ...prev]);
+      setOpenInsight(data as any);
+    }
   };
 
   const delInsight = async (id: string) => {
