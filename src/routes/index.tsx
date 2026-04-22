@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { format, parseISO, isToday } from "date-fns";
-import { Sparkles, TrendingUp, AlertTriangle, FileText, ArrowRight } from "lucide-react";
+import { Sparkles, TrendingUp, AlertTriangle, FileText, ArrowRight, Plus } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import type { Task, Partner, Reimbursement } from "@/lib/types";
@@ -29,6 +29,7 @@ function Dashboard() {
   const [reimb, setReimb] = useState<Reimbursement[]>([]);
   const [loading, setLoading] = useState(true);
   const [openTask, setOpenTask] = useState<Task | null>(null);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => { refresh(); }, []);
   const refresh = async () => {
@@ -56,6 +57,30 @@ function Dashboard() {
     setOpenTask(null);
     await supabase.from("tasks").delete().eq("id", id);
     toast.success("Task deleted");
+  };
+
+  const addTask = async () => {
+    setAdding(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        title: "Untitled task",
+        status: "To Do",
+        priority: "Medium",
+        type: "Daily",
+        due_date: today,
+        position: tasks.length,
+      })
+      .select("*, partner:partners(*)")
+      .single();
+    setAdding(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setTasks((prev) => [...prev, data as any]);
+    setOpenTask(data as any);
   };
 
   const todayTasks = tasks.filter((t) => t.due_date && isToday(parseISO(t.due_date)) && t.status !== "Done");
