@@ -32,6 +32,7 @@ export type Insight = {
   strategy_type: string | null;
   description: string | null;
   created_at: string;
+  updated_at?: string;
 };
 
 export type Reimbursement = {
@@ -42,4 +43,5 @@ export type Reimbursement = {
   description: string | null;
   status: string;
   created_at: string;
+  updated_at?: string;
 };

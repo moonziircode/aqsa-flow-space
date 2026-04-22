@@ -4,10 +4,10 @@ import { Plus, Trash2, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Insight, Partner } from "@/lib/types";
-import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { blankSpotPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CompetitorDetailDrawer } from "@/components/strategy/CompetitorDetailDrawer";
 
 export const Route = createFileRoute("/strategy")({
   head: () => ({
@@ -23,6 +23,7 @@ function StrategyPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openInsight, setOpenInsight] = useState<Insight | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -39,6 +40,7 @@ function StrategyPage() {
   const updateInsight = async (id: string, patch: Partial<Insight>) => {
     setInsights((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     await supabase.from("market_insights").update(patch).eq("id", id);
+    setOpenInsight((o) => (o && o.id === id ? { ...o, ...patch } : o));
   };
 
   const addInsight = async () => {
@@ -47,7 +49,10 @@ function StrategyPage() {
       .insert({ competitor_name: "New competitor", strategy_type: "Pricing", description: "" })
       .select()
       .single();
-    if (data) setInsights((prev) => [data as any, ...prev]);
+    if (data) {
+      setInsights((prev) => [data as any, ...prev]);
+      setOpenInsight(data as any);
+    }
   };
 
   const delInsight = async (id: string) => {
@@ -95,20 +100,24 @@ function StrategyPage() {
                 <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">No insights yet. Click "New row" to start.</td></tr>
               ) : (
                 insights.map((row) => (
-                  <tr key={row.id} className="hover:bg-[var(--hover-bg)] group">
+                  <tr key={row.id} className="hover:bg-[var(--hover-bg)] group cursor-pointer" onClick={() => setOpenInsight(row)}>
                     <td className="px-3 py-2 font-medium">
-                      <InlineEdit value={row.competitor_name} onSave={(v) => updateInsight(row.id, { competitor_name: v })} />
+                      <span className="hover:underline">{row.competitor_name}</span>
                     </td>
                     <td className="px-3 py-2">
-                      <InlineEdit value={row.strategy_type ?? ""} onSave={(v) => updateInsight(row.id, { strategy_type: v })} placeholder="—" />
+                      <span className={cn(!row.strategy_type && "text-muted-foreground")}>
+                        {row.strategy_type || "—"}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-foreground/80">
-                      <InlineEdit value={row.description ?? ""} onSave={(v) => updateInsight(row.id, { description: v })} placeholder="Add notes…" />
+                      <span className={cn("truncate block max-w-[420px]", !row.description && "text-muted-foreground")}>
+                        {row.description?.trim() || "Add notes…"}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs hidden sm:table-cell">
                       {format(parseISO(row.created_at), "d MMM")}
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => delInsight(row.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
                         <Trash2 size={12} />
                       </button>
@@ -154,6 +163,13 @@ function StrategyPage() {
           ))}
         </div>
       </section>
+
+      <CompetitorDetailDrawer
+        insight={openInsight}
+        onClose={() => setOpenInsight(null)}
+        onUpdate={updateInsight}
+        onDelete={delInsight}
+      />
     </div>
   );
 }

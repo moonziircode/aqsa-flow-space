@@ -11,7 +11,8 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import { KanbanSquare, LayoutList, CalendarDays, Columns3 } from "lucide-react";
+import { KanbanSquare, LayoutList, CalendarDays, Columns3, Plus, Search, Archive, X } from "lucide-react";
+import { differenceInDays, parseISO, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Task, Partner } from "@/lib/types";
 import { Column } from "@/components/kanban/Column";
@@ -19,7 +20,7 @@ import { TaskCard } from "@/components/kanban/TaskCard";
 import { TaskDetailDrawer } from "@/components/kanban/TaskDetailDrawer";
 import { TaskListView } from "@/components/workspace/TaskListView";
 import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
-import { STATUSES } from "@/lib/pills";
+import { STATUSES, statusPill, priorityPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -39,7 +40,9 @@ function WorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openTask, setOpenTask] = useState<Task | null>(null);
-  const [view, setView] = useState<"kanban" | "list" | "calendar">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "calendar" | "archive">("kanban");
+  const [search, setSearch] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -60,16 +63,48 @@ function WorkspacePage() {
     setLoading(false);
   };
 
+  // Auto-archive: tasks marked Done are hidden from active views after 7 days
+  // (based on updated_at — when status was last touched).
+  const isArchived = (t: Task) => {
+    if (t.status !== "Done") return false;
+    const ref = t.updated_at ?? t.created_at;
+    if (!ref) return false;
+    return differenceInDays(new Date(), parseISO(ref)) >= 7;
+  };
+
+  const matchesSearch = (t: Task) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return (
+      t.title?.toLowerCase().includes(q) ||
+      (t.description ?? "").toLowerCase().includes(q) ||
+      (t.type ?? "").toLowerCase().includes(q) ||
+      (t.status ?? "").toLowerCase().includes(q) ||
+      (t.priority ?? "").toLowerCase().includes(q) ||
+      (t.partner?.name ?? "").toLowerCase().includes(q) ||
+      (t.partner?.area ?? "").toLowerCase().includes(q)
+    );
+  };
+
+  const activeTasks = useMemo(
+    () => tasks.filter((t) => !isArchived(t) && matchesSearch(t)),
+    [tasks, search]
+  );
+  const archivedTasks = useMemo(
+    () => tasks.filter((t) => isArchived(t) && matchesSearch(t)),
+    [tasks, search]
+  );
+
   const grouped = useMemo(() => {
     const map: Record<string, Task[]> = {};
     STATUSES.forEach((s) => (map[s] = []));
-    tasks.forEach((t) => {
+    activeTasks.forEach((t) => {
       if (!map[t.status]) map[t.status] = [];
       map[t.status].push(t);
     });
     Object.values(map).forEach((arr) => arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0)));
     return map;
-  }, [tasks]);
+  }, [activeTasks]);
 
   const updateTask = async (id: string, patch: Partial<Task>) => {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -97,6 +132,30 @@ function WorkspacePage() {
       .insert({ title: "Untitled task", status, priority: "Medium", type: "Daily", position: (grouped[status]?.length ?? 0) })
       .select("*, partner:partners(*)")
       .single();
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setTasks((prev) => [...prev, data as any]);
+    setOpenTask(data as any);
+  };
+
+  const addTaskFromHeader = async () => {
+    setAdding(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("tasks")
+      .insert({
+        title: "Untitled task",
+        status: "To Do",
+        priority: "Medium",
+        type: "Daily",
+        due_date: today,
+        position: grouped["To Do"]?.length ?? 0,
+      })
+      .select("*, partner:partners(*)")
+      .single();
+    setAdding(false);
     if (error) {
       toast.error(error.message);
       return;
@@ -194,24 +253,54 @@ function WorkspacePage() {
               Drag cards across columns. Click any tag to change priority or status.
             </p>
           </div>
-          <div className="inline-flex items-center bg-[var(--sidebar-bg)] border border-border rounded-lg p-0.5 shadow-sm">
-            {([
-              { id: "kanban", label: "Kanban", Icon: Columns3 },
-              { id: "list", label: "List", Icon: LayoutList },
-              { id: "calendar", label: "Calendar", Icon: CalendarDays },
-            ] as const).map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                onClick={() => setView(id)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors",
-                  view === id ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon size={13} /> {label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={addTaskFromHeader}
+              disabled={adding}
+              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-foreground text-background hover:opacity-90 shadow-sm disabled:opacity-50"
+            >
+              <Plus size={13} /> {adding ? "Adding…" : "Add New Task"}
+            </button>
+            <div className="inline-flex items-center bg-[var(--sidebar-bg)] border border-border rounded-lg p-0.5 shadow-sm">
+              {([
+                { id: "kanban", label: "Kanban", Icon: Columns3 },
+                { id: "list", label: "List", Icon: LayoutList },
+                { id: "calendar", label: "Calendar", Icon: CalendarDays },
+                { id: "archive", label: "Archive", Icon: Archive },
+              ] as const).map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setView(id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors",
+                    view === id ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon size={13} /> {label}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+
+        {/* Search bar */}
+        <div className="mt-4 relative max-w-md">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tasks by title, description, type, partner…"
+            className="w-full pl-8 pr-8 py-1.5 text-sm bg-[var(--sidebar-bg)] border border-border rounded-md outline-none focus:ring-1 focus:ring-foreground/20"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+              aria-label="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -246,13 +335,76 @@ function WorkspacePage() {
 
       {view === "list" && (
         <div className="px-6 md:px-12 py-6 overflow-x-auto">
-          <TaskListView tasks={tasks} partners={partners} onOpen={setOpenTask} onUpdate={updateTask} onDelete={deleteTask} />
+          <TaskListView tasks={activeTasks} partners={partners} onOpen={setOpenTask} onUpdate={updateTask} onDelete={deleteTask} />
         </div>
       )}
 
       {view === "calendar" && (
         <div className="px-6 md:px-12 py-6">
-          <WeeklyCalendar tasks={tasks} onOpen={setOpenTask} />
+          <WeeklyCalendar tasks={activeTasks} onOpen={setOpenTask} />
+        </div>
+      )}
+
+      {view === "archive" && (
+        <div className="px-6 md:px-12 py-6">
+          <div className="mb-4 flex items-start gap-2 text-xs text-muted-foreground">
+            <Archive size={13} className="mt-0.5" />
+            <p>
+              Tasks completed more than 7 days ago are automatically moved here.
+              {archivedTasks.length > 0 && <> {archivedTasks.length} archived task{archivedTasks.length === 1 ? "" : "s"}.</>}
+            </p>
+          </div>
+          <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead className="text-xs text-muted-foreground bg-[var(--sidebar-bg)]">
+                <tr>
+                  <th className="text-left font-normal px-3 py-2">Task</th>
+                  <th className="text-left font-normal px-3 py-2">Partner</th>
+                  <th className="text-left font-normal px-3 py-2">Priority</th>
+                  <th className="text-left font-normal px-3 py-2">Status</th>
+                  <th className="text-left font-normal px-3 py-2">Completed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {archivedTasks.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-sm text-muted-foreground">
+                      Nothing archived yet. Done tasks appear here after 7 days.
+                    </td>
+                  </tr>
+                ) : (
+                  archivedTasks.map((t) => {
+                    const ref = t.updated_at ?? t.created_at;
+                    return (
+                      <tr
+                        key={t.id}
+                        className="hover:bg-[var(--hover-bg)] cursor-pointer"
+                        onClick={() => setOpenTask(t)}
+                      >
+                        <td className="px-3 py-2 font-medium truncate max-w-[320px]">{t.title}</td>
+                        <td className="px-3 py-2 text-muted-foreground truncate max-w-[180px]">
+                          {t.partner?.name ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={cn("inline-flex rounded text-[11px] px-1.5 py-0.5 font-medium", priorityPill[t.priority])}>
+                            {t.priority}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={cn("inline-flex rounded text-[11px] px-1.5 py-0.5 font-medium", statusPill[t.status])}>
+                            {t.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">
+                          {ref ? format(parseISO(ref), "d MMM yyyy") : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
