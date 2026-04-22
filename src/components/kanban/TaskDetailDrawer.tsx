@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, MapPin, Camera, CheckSquare, Square, Trash2 } from "lucide-react";
+import { X, MapPin, Camera, CheckSquare, Square, Trash2, Save } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { Task, Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,16 @@ const checklistLabels: Record<string, string> = {
 export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }: Props) {
   const [uploading, setUploading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [descDraft, setDescDraft] = useState<string>("");
+  const [titleDraft, setTitleDraft] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (task) {
+      setDescDraft(task.description ?? "");
+      setTitleDraft(task.title ?? "");
+    }
+  }, [task?.id]);
 
   useEffect(() => {
     if (!task) return;
@@ -82,10 +92,27 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
 
   const checkedCount = Object.values(checklist).filter(Boolean).length;
 
+  const dirty =
+    titleDraft !== (task.title ?? "") || descDraft !== (task.description ?? "");
+
+  const saveAll = async () => {
+    setSaving(true);
+    const patch: Partial<Task> = {};
+    if (titleDraft !== (task.title ?? "")) patch.title = titleDraft;
+    if (descDraft !== (task.description ?? "")) patch.description = descDraft;
+    if (Object.keys(patch).length > 0) {
+      await onUpdate(task.id, patch);
+      toast.success("Task saved");
+    } else {
+      toast.message("No changes to save");
+    }
+    setSaving(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-foreground/10 backdrop-blur-[1px]" onClick={onClose} />
-      <div className="w-full max-w-2xl bg-background border-l border-border h-full overflow-y-auto">
+      <div className="w-full max-w-3xl bg-background border-l border-border h-full overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-background z-10 border-b border-border px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
