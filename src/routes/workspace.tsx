@@ -253,24 +253,54 @@ function WorkspacePage() {
               Drag cards across columns. Click any tag to change priority or status.
             </p>
           </div>
-          <div className="inline-flex items-center bg-[var(--sidebar-bg)] border border-border rounded-lg p-0.5 shadow-sm">
-            {([
-              { id: "kanban", label: "Kanban", Icon: Columns3 },
-              { id: "list", label: "List", Icon: LayoutList },
-              { id: "calendar", label: "Calendar", Icon: CalendarDays },
-            ] as const).map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                onClick={() => setView(id)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors",
-                  view === id ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon size={13} /> {label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={addTaskFromHeader}
+              disabled={adding}
+              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-foreground text-background hover:opacity-90 shadow-sm disabled:opacity-50"
+            >
+              <Plus size={13} /> {adding ? "Adding…" : "Add New Task"}
+            </button>
+            <div className="inline-flex items-center bg-[var(--sidebar-bg)] border border-border rounded-lg p-0.5 shadow-sm">
+              {([
+                { id: "kanban", label: "Kanban", Icon: Columns3 },
+                { id: "list", label: "List", Icon: LayoutList },
+                { id: "calendar", label: "Calendar", Icon: CalendarDays },
+                { id: "archive", label: "Archive", Icon: Archive },
+              ] as const).map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setView(id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md transition-colors",
+                    view === id ? "bg-background shadow-sm font-medium" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon size={13} /> {label}
+                </button>
+              ))}
+            </div>
           </div>
+        </div>
+
+        {/* Search bar */}
+        <div className="mt-4 relative max-w-md">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tasks by title, description, type, partner…"
+            className="w-full pl-8 pr-8 py-1.5 text-sm bg-[var(--sidebar-bg)] border border-border rounded-md outline-none focus:ring-1 focus:ring-foreground/20"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5"
+              aria-label="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
       </div>
 
