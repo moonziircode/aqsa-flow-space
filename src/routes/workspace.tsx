@@ -335,13 +335,76 @@ function WorkspacePage() {
 
       {view === "list" && (
         <div className="px-6 md:px-12 py-6 overflow-x-auto">
-          <TaskListView tasks={tasks} partners={partners} onOpen={setOpenTask} onUpdate={updateTask} onDelete={deleteTask} />
+          <TaskListView tasks={activeTasks} partners={partners} onOpen={setOpenTask} onUpdate={updateTask} onDelete={deleteTask} />
         </div>
       )}
 
       {view === "calendar" && (
         <div className="px-6 md:px-12 py-6">
-          <WeeklyCalendar tasks={tasks} onOpen={setOpenTask} />
+          <WeeklyCalendar tasks={activeTasks} onOpen={setOpenTask} />
+        </div>
+      )}
+
+      {view === "archive" && (
+        <div className="px-6 md:px-12 py-6">
+          <div className="mb-4 flex items-start gap-2 text-xs text-muted-foreground">
+            <Archive size={13} className="mt-0.5" />
+            <p>
+              Tasks completed more than 7 days ago are automatically moved here.
+              {archivedTasks.length > 0 && <> {archivedTasks.length} archived task{archivedTasks.length === 1 ? "" : "s"}.</>}
+            </p>
+          </div>
+          <div className="border border-border rounded-xl overflow-hidden bg-card shadow-sm">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead className="text-xs text-muted-foreground bg-[var(--sidebar-bg)]">
+                <tr>
+                  <th className="text-left font-normal px-3 py-2">Task</th>
+                  <th className="text-left font-normal px-3 py-2">Partner</th>
+                  <th className="text-left font-normal px-3 py-2">Priority</th>
+                  <th className="text-left font-normal px-3 py-2">Status</th>
+                  <th className="text-left font-normal px-3 py-2">Completed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {archivedTasks.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-sm text-muted-foreground">
+                      Nothing archived yet. Done tasks appear here after 7 days.
+                    </td>
+                  </tr>
+                ) : (
+                  archivedTasks.map((t) => {
+                    const ref = t.updated_at ?? t.created_at;
+                    return (
+                      <tr
+                        key={t.id}
+                        className="hover:bg-[var(--hover-bg)] cursor-pointer"
+                        onClick={() => setOpenTask(t)}
+                      >
+                        <td className="px-3 py-2 font-medium truncate max-w-[320px]">{t.title}</td>
+                        <td className="px-3 py-2 text-muted-foreground truncate max-w-[180px]">
+                          {t.partner?.name ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={cn("inline-flex rounded text-[11px] px-1.5 py-0.5 font-medium", priorityPill[t.priority])}>
+                            {t.priority}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={cn("inline-flex rounded text-[11px] px-1.5 py-0.5 font-medium", statusPill[t.status])}>
+                            {t.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">
+                          {ref ? format(parseISO(ref), "d MMM yyyy") : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
