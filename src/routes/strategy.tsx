@@ -100,20 +100,24 @@ function StrategyPage() {
                 <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">No insights yet. Click "New row" to start.</td></tr>
               ) : (
                 insights.map((row) => (
-                  <tr key={row.id} className="hover:bg-[var(--hover-bg)] group">
+                  <tr key={row.id} className="hover:bg-[var(--hover-bg)] group cursor-pointer" onClick={() => setOpenInsight(row)}>
                     <td className="px-3 py-2 font-medium">
-                      <InlineEdit value={row.competitor_name} onSave={(v) => updateInsight(row.id, { competitor_name: v })} />
+                      <span className="hover:underline">{row.competitor_name}</span>
                     </td>
                     <td className="px-3 py-2">
-                      <InlineEdit value={row.strategy_type ?? ""} onSave={(v) => updateInsight(row.id, { strategy_type: v })} placeholder="—" />
+                      <span className={cn(!row.strategy_type && "text-muted-foreground")}>
+                        {row.strategy_type || "—"}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-foreground/80">
-                      <InlineEdit value={row.description ?? ""} onSave={(v) => updateInsight(row.id, { description: v })} placeholder="Add notes…" />
+                      <span className={cn("truncate block max-w-[420px]", !row.description && "text-muted-foreground")}>
+                        {row.description?.trim() || "Add notes…"}
+                      </span>
                     </td>
                     <td className="px-3 py-2 text-muted-foreground text-xs hidden sm:table-cell">
                       {format(parseISO(row.created_at), "d MMM")}
                     </td>
-                    <td className="px-2 py-2">
+                    <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => delInsight(row.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
                         <Trash2 size={12} />
                       </button>
@@ -159,6 +163,13 @@ function StrategyPage() {
           ))}
         </div>
       </section>
+
+      <CompetitorDetailDrawer
+        insight={openInsight}
+        onClose={() => setOpenInsight(null)}
+        onUpdate={updateInsight}
+        onDelete={delInsight}
+      />
     </div>
   );
 }
