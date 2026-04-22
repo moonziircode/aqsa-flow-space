@@ -258,6 +258,28 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
               </a>
             )}
           </div>
+
+          {/* Bottom save bar */}
+          <div className="pt-4 border-t border-border flex items-center justify-end gap-2">
+            <button
+              onClick={onClose}
+              className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-[var(--hover-bg)] text-muted-foreground"
+            >
+              Close
+            </button>
+            <button
+              onClick={saveAll}
+              disabled={!dirty || saving}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-md border transition-colors",
+                dirty
+                  ? "bg-foreground text-background border-foreground hover:opacity-90"
+                  : "bg-muted text-muted-foreground border-border cursor-not-allowed"
+              )}
+            >
+              <Save size={14} /> {saving ? "Saving…" : "Save Task"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
