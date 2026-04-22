@@ -122,6 +122,18 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
           </div>
           <div className="flex items-center gap-1">
             <button
+              onClick={saveAll}
+              disabled={!dirty || saving}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border transition-colors mr-1",
+                dirty
+                  ? "bg-foreground text-background border-foreground hover:opacity-90"
+                  : "bg-transparent text-muted-foreground border-border cursor-not-allowed"
+              )}
+            >
+              <Save size={13} /> {saving ? "Saving…" : "Save Task"}
+            </button>
+            <button
               onClick={() => {
                 if (confirm("Delete this task?")) onDelete(task.id);
               }}
