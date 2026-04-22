@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { X, MapPin, Camera, CheckSquare, Square, Trash2 } from "lucide-react";
+import { X, MapPin, Camera, CheckSquare, Square, Trash2, Save } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { Task, Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
-import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { PillSelect } from "@/components/ui-extras/PillSelect";
 import { PartnerCombobox } from "@/components/ui-extras/PartnerCombobox";
 import { priorityPill, statusPill, typePill, PRIORITIES, STATUSES, TYPES } from "@/lib/pills";
@@ -27,6 +26,16 @@ const checklistLabels: Record<string, string> = {
 export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }: Props) {
   const [uploading, setUploading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [descDraft, setDescDraft] = useState<string>("");
+  const [titleDraft, setTitleDraft] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (task) {
+      setDescDraft(task.description ?? "");
+      setTitleDraft(task.title ?? "");
+    }
+  }, [task?.id]);
 
   useEffect(() => {
     if (!task) return;
@@ -82,10 +91,27 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
 
   const checkedCount = Object.values(checklist).filter(Boolean).length;
 
+  const dirty =
+    titleDraft !== (task.title ?? "") || descDraft !== (task.description ?? "");
+
+  const saveAll = async () => {
+    setSaving(true);
+    const patch: Partial<Task> = {};
+    if (titleDraft !== (task.title ?? "")) patch.title = titleDraft;
+    if (descDraft !== (task.description ?? "")) patch.description = descDraft;
+    if (Object.keys(patch).length > 0) {
+      await onUpdate(task.id, patch);
+      toast.success("Task saved");
+    } else {
+      toast.message("No changes to save");
+    }
+    setSaving(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-foreground/10 backdrop-blur-[1px]" onClick={onClose} />
-      <div className="w-full max-w-2xl bg-background border-l border-border h-full overflow-y-auto">
+      <div className="w-full max-w-3xl bg-background border-l border-border h-full overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-background z-10 border-b border-border px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -94,6 +120,18 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
             <span>{format(parseISO(task.created_at), "d MMM yyyy")}</span>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              onClick={saveAll}
+              disabled={!dirty || saving}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border transition-colors mr-1",
+                dirty
+                  ? "bg-foreground text-background border-foreground hover:opacity-90"
+                  : "bg-transparent text-muted-foreground border-border cursor-not-allowed"
+              )}
+            >
+              <Save size={13} /> {saving ? "Saving…" : "Save Task"}
+            </button>
             <button
               onClick={() => {
                 if (confirm("Delete this task?")) onDelete(task.id);
@@ -110,11 +148,11 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
 
         <div className="px-6 md:px-12 py-6 space-y-6">
           {/* Title */}
-          <InlineEdit
-            value={task.title}
-            onSave={(v) => onUpdate(task.id, { title: v })}
-            as="h1"
-            className="text-3xl font-bold leading-tight"
+          <input
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            placeholder="Task title…"
+            className="w-full text-3xl font-bold leading-tight bg-transparent outline-none rounded px-1 -mx-1 hover:bg-[var(--hover-bg)] focus:bg-[var(--hover-bg)]"
           />
 
           {/* Properties grid */}
@@ -150,16 +188,15 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description — large editable area */}
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Description</div>
-            <InlineEdit
-              value={task.description ?? ""}
-              onSave={(v) => onUpdate(task.id, { description: v })}
-              multiline
-              as="p"
-              className="text-sm leading-relaxed min-h-[60px] block"
-              placeholder="Add a description… click to edit"
+            <textarea
+              value={descDraft}
+              onChange={(e) => setDescDraft(e.target.value)}
+              placeholder="Add a detailed description, agenda, observations…"
+              rows={10}
+              className="w-full text-base leading-relaxed bg-[var(--sidebar-bg)] border border-border rounded-lg p-4 outline-none focus:ring-1 focus:ring-foreground/20 resize-y min-h-[220px]"
             />
           </div>
 
@@ -219,6 +256,28 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
                 <img src={task.image_path} alt="Field proof" className="rounded-md border border-border max-h-64 object-cover" />
               </a>
             )}
+          </div>
+
+          {/* Bottom save bar */}
+          <div className="pt-4 border-t border-border flex items-center justify-end gap-2">
+            <button
+              onClick={onClose}
+              className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-[var(--hover-bg)] text-muted-foreground"
+            >
+              Close
+            </button>
+            <button
+              onClick={saveAll}
+              disabled={!dirty || saving}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-sm px-4 py-1.5 rounded-md border transition-colors",
+                dirty
+                  ? "bg-foreground text-background border-foreground hover:opacity-90"
+                  : "bg-muted text-muted-foreground border-border cursor-not-allowed"
+              )}
+            >
+              <Save size={14} /> {saving ? "Saving…" : "Save Task"}
+            </button>
           </div>
         </div>
       </div>

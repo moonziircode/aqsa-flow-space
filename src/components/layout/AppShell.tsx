@@ -8,7 +8,7 @@ const nav = [
   { to: "/workspace", label: "Workspace", icon: KanbanSquare },
   { to: "/strategy", label: "Strategy", icon: Sparkles },
   { to: "/partners", label: "Partners", icon: Users },
-  { to: "/admin", label: "Admin", icon: Receipt },
+  { to: "/admin", label: "Reimbursement", icon: Receipt },
 ] as const;
 
 export function AppShell() {

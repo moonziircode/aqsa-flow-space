@@ -7,6 +7,7 @@ import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { PillSelect } from "@/components/ui-extras/PillSelect";
 import { blankSpotPill } from "@/lib/pills";
 import { PartnerImportDialog } from "@/components/workspace/PartnerImportDialog";
+import { AddPartnerDialog } from "@/components/workspace/AddPartnerDialog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/partners")({
@@ -25,6 +26,7 @@ function PartnersPage() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -36,15 +38,6 @@ function PartnersPage() {
   const update = async (id: string, patch: Partial<Partner>) => {
     setPartners((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     await supabase.from("partners").update(patch).eq("id", id);
-  };
-
-  const add = async () => {
-    const { data } = await supabase
-      .from("partners")
-      .insert({ name: "New Partner", area: "", blank_spot_status: "covered" })
-      .select()
-      .single();
-    if (data) setPartners((p) => [...p, data as any]);
   };
 
   const del = async (id: string) => {
@@ -69,7 +62,7 @@ function PartnersPage() {
           >
             <Upload size={14} /> Import (CSV/XLSX)
           </button>
-          <button onClick={add} className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 bg-foreground text-background rounded-md hover:opacity-90 shadow-sm">
+          <button onClick={() => setAddOpen(true)} className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 bg-foreground text-background rounded-md hover:opacity-90 shadow-sm">
             <Plus size={14} /> New partner
           </button>
         </div>
@@ -117,6 +110,11 @@ function PartnersPage() {
       </div>
 
       <PartnerImportDialog open={importOpen} onClose={() => setImportOpen(false)} onImported={load} />
+      <AddPartnerDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onCreated={(p) => setPartners((prev) => [...prev, p].sort((a, b) => a.name.localeCompare(b.name)))}
+      />
     </div>
   );
 }
