@@ -139,28 +139,22 @@ function Dashboard() {
         <Metric icon={<Sparkles size={14} />} label="Active tasks" value={String(tasks.filter(t => t.status !== "Done").length)} hint={`of ${totalCount}`} />
       </div>
 
-      {/* Weekly calendar */}
+      {/* Tasks (was: Today's Field Visits) */}
       <div className="mb-10">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">This Week</h2>
-          <Link to="/workspace" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-            Full workspace <ArrowRight size={12} />
-          </Link>
-        </div>
-        {loading ? (
-          <div className="h-48 rounded-xl bg-muted animate-pulse" />
-        ) : (
-          <WeeklyCalendar tasks={tasks} onOpen={setOpenTask} />
-        )}
-      </div>
-
-      {/* Today's tasks - inline DB */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Today's Field Visits</h2>
-          <Link to="/workspace" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-            Open Kanban <ArrowRight size={12} />
-          </Link>
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tasks</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={addTask}
+              disabled={adding}
+              className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-foreground text-background hover:opacity-90 shadow-sm disabled:opacity-50"
+            >
+              <Plus size={12} /> {adding ? "Adding…" : "Add New Task"}
+            </button>
+            <Link to="/workspace" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              Open Kanban <ArrowRight size={12} />
+            </Link>
+          </div>
         </div>
         <div className="border border-border rounded-md overflow-hidden">
           {loading ? (
@@ -168,7 +162,7 @@ function Dashboard() {
               {[0, 1, 2].map((i) => <div key={i} className="h-8 bg-muted animate-pulse rounded" />)}
             </div>
           ) : todayTasks.length === 0 ? (
-            <div className="p-6 text-center text-sm text-muted-foreground">No visits scheduled today. 🎉</div>
+            <div className="p-6 text-center text-sm text-muted-foreground">No tasks scheduled today. Click <strong>Add New Task</strong> to create one.</div>
           ) : (
             <table className="w-full text-sm">
               <thead className="text-xs text-muted-foreground bg-[var(--sidebar-bg)]">
@@ -181,7 +175,7 @@ function Dashboard() {
               </thead>
               <tbody className="divide-y divide-border">
                 {todayTasks.map((t) => (
-                  <tr key={t.id} className="hover:bg-[var(--hover-bg)]">
+                  <tr key={t.id} className="hover:bg-[var(--hover-bg)] cursor-pointer" onClick={() => setOpenTask(t)}>
                     <td className="px-3 py-2 font-medium truncate max-w-[280px]">{t.title}</td>
                     <td className="px-3 py-2 text-muted-foreground hidden sm:table-cell truncate max-w-[160px]">
                       {t.partner?.name ?? "—"}
@@ -198,6 +192,21 @@ function Dashboard() {
             </table>
           )}
         </div>
+      </div>
+
+      {/* Weekly calendar — moved BELOW tasks */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">This Week</h2>
+          <Link to="/workspace" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+            Full workspace <ArrowRight size={12} />
+          </Link>
+        </div>
+        {loading ? (
+          <div className="h-48 rounded-xl bg-muted animate-pulse" />
+        ) : (
+          <WeeklyCalendar tasks={tasks} onOpen={setOpenTask} />
+        )}
       </div>
 
       <TaskDetailDrawer task={openTask} partners={partners} onClose={() => setOpenTask(null)} onUpdate={updateTask} onDelete={deleteTask} />
