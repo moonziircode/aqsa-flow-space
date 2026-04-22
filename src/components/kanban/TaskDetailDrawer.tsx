@@ -137,11 +137,11 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
 
         <div className="px-6 md:px-12 py-6 space-y-6">
           {/* Title */}
-          <InlineEdit
-            value={task.title}
-            onSave={(v) => onUpdate(task.id, { title: v })}
-            as="h1"
-            className="text-3xl font-bold leading-tight"
+          <input
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            placeholder="Task title…"
+            className="w-full text-3xl font-bold leading-tight bg-transparent outline-none rounded px-1 -mx-1 hover:bg-[var(--hover-bg)] focus:bg-[var(--hover-bg)]"
           />
 
           {/* Properties grid */}
@@ -177,16 +177,15 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description — large editable area */}
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Description</div>
-            <InlineEdit
-              value={task.description ?? ""}
-              onSave={(v) => onUpdate(task.id, { description: v })}
-              multiline
-              as="p"
-              className="text-sm leading-relaxed min-h-[60px] block"
-              placeholder="Add a description… click to edit"
+            <textarea
+              value={descDraft}
+              onChange={(e) => setDescDraft(e.target.value)}
+              placeholder="Add a detailed description, agenda, observations…"
+              rows={10}
+              className="w-full text-base leading-relaxed bg-[var(--sidebar-bg)] border border-border rounded-lg p-4 outline-none focus:ring-1 focus:ring-foreground/20 resize-y min-h-[220px]"
             />
           </div>
 
