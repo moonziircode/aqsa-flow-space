@@ -3,7 +3,6 @@ import { X, MapPin, Camera, CheckSquare, Square, Trash2, Save } from "lucide-rea
 import { format, parseISO } from "date-fns";
 import type { Task, Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
-import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { PillSelect } from "@/components/ui-extras/PillSelect";
 import { PartnerCombobox } from "@/components/ui-extras/PartnerCombobox";
 import { priorityPill, statusPill, typePill, PRIORITIES, STATUSES, TYPES } from "@/lib/pills";
