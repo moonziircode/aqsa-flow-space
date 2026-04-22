@@ -4,11 +4,11 @@ import { Receipt, Plus, Trash2, Camera, FileText } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Reimbursement } from "@/lib/types";
-import { InlineEdit } from "@/components/ui-extras/InlineEdit";
 import { PillSelect } from "@/components/ui-extras/PillSelect";
 import { reimbStatusPill } from "@/lib/pills";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ReimbursementDetailDrawer } from "@/components/admin/ReimbursementDetailDrawer";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -26,6 +26,7 @@ const STATUS = ["Pending", "Approved", "Rejected"] as const;
 function AdminPage() {
   const [rows, setRows] = useState<Reimbursement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openRow, setOpenRow] = useState<Reimbursement | null>(null);
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -37,6 +38,7 @@ function AdminPage() {
   const update = async (id: string, patch: Partial<Reimbursement>) => {
     setRows((p) => p.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     await supabase.from("admin_reimbursements").update(patch).eq("id", id);
+    setOpenRow((o) => (o && o.id === id ? { ...o, ...patch } : o));
   };
 
   const add = async () => {
@@ -45,7 +47,10 @@ function AdminPage() {
       .insert({ form_type: "SPD", amount: 0, status: "Pending", description: "" })
       .select()
       .single();
-    if (data) setRows((p) => [data as any, ...p]);
+    if (data) {
+      setRows((p) => [data as any, ...p]);
+      setOpenRow(data as any);
+    }
   };
 
   const del = async (id: string) => {
