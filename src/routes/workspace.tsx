@@ -11,7 +11,8 @@ import {
   useSensors,
   closestCorners,
 } from "@dnd-kit/core";
-import { KanbanSquare, LayoutList, CalendarDays, Columns3 } from "lucide-react";
+import { KanbanSquare, LayoutList, CalendarDays, Columns3, Plus, Search, Archive, X } from "lucide-react";
+import { differenceInDays, parseISO, format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Task, Partner } from "@/lib/types";
 import { Column } from "@/components/kanban/Column";
@@ -19,7 +20,7 @@ import { TaskCard } from "@/components/kanban/TaskCard";
 import { TaskDetailDrawer } from "@/components/kanban/TaskDetailDrawer";
 import { TaskListView } from "@/components/workspace/TaskListView";
 import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
-import { STATUSES } from "@/lib/pills";
+import { STATUSES, statusPill, priorityPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
