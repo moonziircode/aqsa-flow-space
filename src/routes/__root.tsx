@@ -2,6 +2,9 @@ import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/r
 import appCss from "../styles.css?url";
 import { AppShell } from "@/components/layout/AppShell";
 import { Toaster } from "@/components/ui/sonner";
+import { useGlobalUndoHotkey } from "@/lib/undo";
+import { useEffect } from "react";
+import { ensureSelectOptions } from "@/lib/selectOptions";
 
 function NotFoundComponent() {
   return (
@@ -57,6 +60,8 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useGlobalUndoHotkey();
+  useEffect(() => { ensureSelectOptions().catch(() => {}); }, []);
   return (
     <>
       <AppShell />

@@ -3,8 +3,8 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Plus } from "lucide-react";
 import type { Task } from "@/lib/types";
 import { TaskCard } from "./TaskCard";
-import { statusPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
+import { styleFor } from "@/lib/selectOptions";
 
 type Props = {
   status: string;
@@ -16,12 +16,16 @@ type Props = {
 
 export function Column({ status, tasks, onOpen, onUpdate, onAdd }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: status, data: { type: "column", status } });
+  const s = styleFor("status", status);
 
   return (
     <div className="flex-shrink-0 w-72 flex flex-col">
       <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-2">
-          <span className={cn("inline-flex items-center rounded text-[11px] px-1.5 py-0.5 font-medium", statusPill[status])}>
+          <span
+            className="inline-flex items-center rounded text-[11px] px-1.5 py-0.5 font-medium"
+            style={{ backgroundColor: s.bg, color: s.fg }}
+          >
             {status}
           </span>
           <span className="text-xs text-muted-foreground">{tasks.length}</span>

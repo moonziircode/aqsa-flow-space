@@ -2,9 +2,8 @@ import { format, parseISO } from "date-fns";
 import { Trash2 } from "lucide-react";
 import type { Task, Partner } from "@/lib/types";
 import { InlineEdit } from "@/components/ui-extras/InlineEdit";
-import { PillSelect } from "@/components/ui-extras/PillSelect";
+import { EditablePillSelect } from "@/components/ui-extras/EditablePillSelect";
 import { PartnerCombobox } from "@/components/ui-extras/PartnerCombobox";
-import { priorityPill, statusPill, PRIORITIES, STATUSES } from "@/lib/pills";
 
 type Props = {
   tasks: Task[];
@@ -39,10 +38,10 @@ export function TaskListView({ tasks, partners, onOpen, onUpdate, onDelete }: Pr
                 </button>
               </td>
               <td className="px-3 py-2">
-                <PillSelect value={t.status} options={STATUSES} classMap={statusPill} onChange={(s) => onUpdate(t.id, { status: s })} />
+                <EditablePillSelect field="status" value={t.status} onChange={(s) => onUpdate(t.id, { status: s })} />
               </td>
               <td className="px-3 py-2">
-                <PillSelect value={t.priority} options={PRIORITIES} classMap={priorityPill} onChange={(p) => onUpdate(t.id, { priority: p })} />
+                <EditablePillSelect field="priority" value={t.priority} onChange={(p) => onUpdate(t.id, { priority: p })} />
               </td>
               <td className="px-3 py-2 max-w-[200px]">
                 <PartnerCombobox value={t.partner_id} partners={partners} onChange={(id) => onUpdate(t.id, { partner_id: id })} />
