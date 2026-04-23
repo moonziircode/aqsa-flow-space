@@ -8,6 +8,7 @@ import { PartnerImportDialog } from "@/components/workspace/PartnerImportDialog"
 import { AddPartnerDialog } from "@/components/workspace/AddPartnerDialog";
 import { toast } from "sonner";
 import { recordUndo } from "@/lib/undo";
+import { formatPercent, parsePercentInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/partners")({
   head: () => ({
@@ -131,7 +132,18 @@ function PartnersPage() {
                   <InlineEdit value={p.shipper ?? ""} onSave={(v) => update(p.id, { shipper: v })} placeholder="—" />
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">
-                  <InlineEdit value={p.trend_shipper ?? ""} onSave={(v) => update(p.id, { trend_shipper: v })} placeholder="—" />
+                  <InlineEdit
+                    value={formatPercent(p.trend_shipper)}
+                    onSave={(v) => {
+                      const parsed = parsePercentInput(v);
+                      if (parsed === null) {
+                        toast.error("Enter a number, e.g. 12,1 or -134.7");
+                        return;
+                      }
+                      update(p.id, { trend_shipper: parsed || null });
+                    }}
+                    placeholder="—"
+                  />
                 </td>
                 <td className="px-3 py-2 text-right font-mono">
                   <InlineEdit
@@ -140,7 +152,18 @@ function PartnersPage() {
                   />
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">
-                  <InlineEdit value={p.trend_awb_otomatis ?? ""} onSave={(v) => update(p.id, { trend_awb_otomatis: v })} placeholder="—" />
+                  <InlineEdit
+                    value={formatPercent(p.trend_awb_otomatis)}
+                    onSave={(v) => {
+                      const parsed = parsePercentInput(v);
+                      if (parsed === null) {
+                        toast.error("Enter a number, e.g. 12,1 or -134.7");
+                        return;
+                      }
+                      update(p.id, { trend_awb_otomatis: parsed || null });
+                    }}
+                    placeholder="—"
+                  />
                 </td>
                 <td className="px-3 py-2 text-right font-mono">
                   <InlineEdit
