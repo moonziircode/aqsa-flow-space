@@ -89,10 +89,11 @@ function Dashboard() {
   const successRate = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
   const pendingReimb = reimb.filter((r) => r.status === "Pending").length;
 
-  // AI-style brief based on partner data
+  // AI-style brief based on partner data — surface partners leaning heavily on
+  // manual AWBs (where automation hasn't caught up).
   const riskyPartner = partners
-    .filter((p) => (p.exception_rate_opcode_70 ?? 0) > 10)
-    .sort((a, b) => (b.exception_rate_opcode_70 ?? 0) - (a.exception_rate_opcode_70 ?? 0))[0];
+    .filter((p) => (p.awb_manual ?? 0) > (p.awb_otomatis ?? 0))
+    .sort((a, b) => (b.awb_manual ?? 0) - (a.awb_manual ?? 0))[0];
 
   return (
     <div className="max-w-4xl mx-auto w-full px-6 md:px-12 py-8 md:py-14">
@@ -119,12 +120,13 @@ function Dashboard() {
               You have <strong>{todayTasks.length} visit{todayTasks.length === 1 ? "" : "s"}</strong> today.{" "}
               {riskyPartner ? (
                 <>
-                  <strong>{riskyPartner.name}</strong>'s AWB is impacted by Opcode 70 (
-                  {riskyPartner.exception_rate_opcode_70?.toFixed(1)}% exception rate). Educate them on
+                  <strong>{riskyPartner.name}</strong> still relies on{" "}
+                  <strong>{riskyPartner.awb_manual}</strong> manual AWBs vs{" "}
+                  <strong>{riskyPartner.awb_otomatis ?? 0}</strong> automated. Educate them on
                   MAA 2.0 SOP today and verify signboard placement.
                 </>
               ) : (
-                <>All partners are within nominal exception thresholds. Focus on Mitra B for PPOB cross-sell.</>
+                <>All partners are leaning automated. Focus on PPOB cross-sell opportunities today.</>
               )}
             </p>
           )}
@@ -134,7 +136,7 @@ function Dashboard() {
       {/* Quick metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         <Metric icon={<TrendingUp size={14} />} label="Week success rate" value={`${successRate}%`} hint="Opcode 80 vs 205" />
-        <Metric icon={<AlertTriangle size={14} />} label="At-risk partners" value={String(partners.filter(p => (p.exception_rate_opcode_70 ?? 0) > 10).length)} hint="Opcode 70 > 10%" />
+        <Metric icon={<AlertTriangle size={14} />} label="Manual-heavy partners" value={String(partners.filter(p => (p.awb_manual ?? 0) > (p.awb_otomatis ?? 0)).length)} hint="manual > otomatis" />
         <Metric icon={<FileText size={14} />} label="Pending admin" value={String(pendingReimb)} hint="FR_TAB_QMS_005" />
         <Metric icon={<Sparkles size={14} />} label="Active tasks" value={String(tasks.filter(t => t.status !== "Done").length)} hint={`of ${totalCount}`} />
       </div>
