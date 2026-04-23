@@ -10,49 +10,55 @@ type Props = {
   onCreated: (p: Partner) => void;
 };
 
-const SPOT_OPTS = ["covered", "partial", "blank"] as const;
+type FormState = {
+  name: string;            // External Store Name
+  city: string;
+  shipper: string;
+  trend_shipper: string;
+  awb_otomatis: string;
+  trend_awb_otomatis: string;
+  awb_manual: string;
+  owner: string;
+  longlat: string;
+};
+
+const EMPTY: FormState = {
+  name: "",
+  city: "",
+  shipper: "",
+  trend_shipper: "",
+  awb_otomatis: "",
+  trend_awb_otomatis: "",
+  awb_manual: "",
+  owner: "",
+  longlat: "",
+};
 
 export function AddPartnerDialog({ open, onClose, onCreated }: Props) {
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    area: "",
-    awb_avg: "",
-    exception_rate_opcode_70: "",
-    dropoff_rate_opcode_59: "",
-    blank_spot_status: "covered" as (typeof SPOT_OPTS)[number],
-  });
+  const [form, setForm] = useState<FormState>(EMPTY);
 
   if (!open) return null;
 
-  const reset = () =>
-    setForm({
-      name: "",
-      area: "",
-      awb_avg: "",
-      exception_rate_opcode_70: "",
-      dropoff_rate_opcode_59: "",
-      blank_spot_status: "covered",
-    });
+  const reset = () => setForm(EMPTY);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) {
-      toast.error("Partner name is required");
+      toast.error("External Store Name is required");
       return;
     }
     setSaving(true);
     const payload = {
       name: form.name.trim(),
-      area: form.area.trim() || null,
-      awb_avg: form.awb_avg ? parseFloat(form.awb_avg) : 0,
-      exception_rate_opcode_70: form.exception_rate_opcode_70
-        ? parseFloat(form.exception_rate_opcode_70)
-        : 0,
-      dropoff_rate_opcode_59: form.dropoff_rate_opcode_59
-        ? parseFloat(form.dropoff_rate_opcode_59)
-        : 0,
-      blank_spot_status: form.blank_spot_status,
+      city: form.city.trim() || null,
+      shipper: form.shipper.trim() || null,
+      trend_shipper: form.trend_shipper.trim() || null,
+      awb_otomatis: form.awb_otomatis ? parseFloat(form.awb_otomatis) : 0,
+      trend_awb_otomatis: form.trend_awb_otomatis.trim() || null,
+      awb_manual: form.awb_manual ? parseFloat(form.awb_manual) : 0,
+      owner: form.owner.trim() || null,
+      longlat: form.longlat.trim() || null,
     };
     const { data, error } = await supabase
       .from("partners")
@@ -72,7 +78,7 @@ export function AddPartnerDialog({ open, onClose, onCreated }: Props) {
 
   const field = (
     label: string,
-    key: keyof typeof form,
+    key: keyof FormState,
     opts: { type?: string; placeholder?: string; required?: boolean; hint?: string } = {}
   ) => (
     <label className="block">
@@ -85,7 +91,7 @@ export function AddPartnerDialog({ open, onClose, onCreated }: Props) {
       </div>
       <input
         type={opts.type || "text"}
-        value={form[key] as string}
+        value={form[key]}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
         placeholder={opts.placeholder}
         required={opts.required}
@@ -99,7 +105,7 @@ export function AddPartnerDialog({ open, onClose, onCreated }: Props) {
       <div className="absolute inset-0 bg-foreground/20 backdrop-blur-[1px]" onClick={onClose} />
       <form
         onSubmit={submit}
-        className="relative w-full max-w-2xl bg-background border border-border rounded-xl shadow-lg overflow-hidden"
+        className="relative w-full max-w-3xl bg-background border border-border rounded-xl shadow-lg overflow-hidden max-h-[90vh] flex flex-col"
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
           <div className="flex items-center gap-2">
@@ -115,53 +121,31 @@ export function AddPartnerDialog({ open, onClose, onCreated }: Props) {
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {field("Partner name (Mitra)", "name", {
+            {field("External Store Name", "name", {
               required: true,
               placeholder: "e.g. Mitra Bakti Sejahtera",
             })}
-            {field("Area / City", "area", { placeholder: "e.g. Jakarta Selatan" })}
+            {field("City", "city", { placeholder: "e.g. Jakarta Selatan" })}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {field("AWB average", "awb_avg", {
-              type: "number",
-              placeholder: "0",
-              hint: "per day",
-            })}
-            {field("Opcode 70 %", "exception_rate_opcode_70", {
-              type: "number",
-              placeholder: "0.0",
-              hint: "exception rate",
-            })}
-            {field("Opcode 59 %", "dropoff_rate_opcode_59", {
-              type: "number",
-              placeholder: "0.0",
-              hint: "dropoff rate",
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {field("Shipper", "shipper", { placeholder: "Primary shipper" })}
+            {field("Trend Shipper", "trend_shipper", { placeholder: "↑ growing / ↓ declining / →" })}
           </div>
 
-          <label className="block">
-            <div className="text-xs font-medium text-foreground mb-1">Blank spot status</div>
-            <div className="inline-flex rounded-md border border-border overflow-hidden">
-              {SPOT_OPTS.map((opt) => (
-                <button
-                  type="button"
-                  key={opt}
-                  onClick={() => setForm((f) => ({ ...f, blank_spot_status: opt }))}
-                  className={
-                    "text-xs px-3 py-1.5 capitalize transition-colors " +
-                    (form.blank_spot_status === opt
-                      ? "bg-foreground text-background"
-                      : "bg-background text-muted-foreground hover:bg-[var(--hover-bg)]")
-                  }
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {field("AWB Otomatis", "awb_otomatis", { type: "number", placeholder: "0", hint: "automated AWBs" })}
+            {field("Trend AWB Otomatis", "trend_awb_otomatis", { placeholder: "↑ / ↓ / flat" })}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {field("AWB Manual", "awb_manual", { type: "number", placeholder: "0", hint: "manual AWBs" })}
+            {field("Owner", "owner", { placeholder: "Owner full name" })}
+          </div>
+
+          {field("Longlat", "longlat", { placeholder: "-6.20088, 106.81653", hint: "latitude,longitude" })}
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border bg-[var(--sidebar-bg)]">
