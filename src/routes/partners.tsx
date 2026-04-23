@@ -8,6 +8,7 @@ import { PartnerImportDialog } from "@/components/workspace/PartnerImportDialog"
 import { AddPartnerDialog } from "@/components/workspace/AddPartnerDialog";
 import { toast } from "sonner";
 import { recordUndo } from "@/lib/undo";
+import { formatPercent, parsePercentInput } from "@/lib/utils";
 
 export const Route = createFileRoute("/partners")({
   head: () => ({
