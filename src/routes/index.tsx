@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
 import { TaskDetailDrawer } from "@/components/kanban/TaskDetailDrawer";
 import { toast } from "sonner";
+import { recordUndo } from "@/lib/undo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -45,18 +46,41 @@ function Dashboard() {
   };
 
   const updateTask = async (id: string, patch: Partial<Task>) => {
+    const prev = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     const { partner, ...dbPatch } = patch as any;
     const { error } = await supabase.from("tasks").update(dbPatch).eq("id", id);
     if (error) { toast.error("Save failed"); refresh(); return; }
     if (openTask?.id === id) setOpenTask((o) => (o ? { ...o, ...patch } : o));
+    if (prev) {
+      const inverse: any = {};
+      Object.keys(dbPatch).forEach((k) => { inverse[k] = (prev as any)[k]; });
+      recordUndo({
+        label: `Edit "${prev.title}"`,
+        undo: async () => {
+          setTasks((all) => all.map((t) => (t.id === id ? { ...t, ...inverse } : t)));
+          await supabase.from("tasks").update(inverse).eq("id", id);
+        },
+      });
+    }
   };
 
   const deleteTask = async (id: string) => {
+    const prev = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setOpenTask(null);
     await supabase.from("tasks").delete().eq("id", id);
     toast.success("Task deleted");
+    if (prev) {
+      const { partner, ...row } = prev as any;
+      recordUndo({
+        label: `Delete "${prev.title}"`,
+        undo: async () => {
+          const { data } = await supabase.from("tasks").insert(row).select("*, partner:partners(*)").single();
+          if (data) setTasks((all) => [...all, data as any]);
+        },
+      });
+    }
   };
 
   const addTask = async () => {
@@ -89,10 +113,11 @@ function Dashboard() {
   const successRate = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
   const pendingReimb = reimb.filter((r) => r.status === "Pending").length;
 
-  // AI-style brief based on partner data
+  // AI-style brief based on partner data — surface partners leaning heavily on
+  // manual AWBs (where automation hasn't caught up).
   const riskyPartner = partners
-    .filter((p) => (p.exception_rate_opcode_70 ?? 0) > 10)
-    .sort((a, b) => (b.exception_rate_opcode_70 ?? 0) - (a.exception_rate_opcode_70 ?? 0))[0];
+    .filter((p) => (p.awb_manual ?? 0) > (p.awb_otomatis ?? 0))
+    .sort((a, b) => (b.awb_manual ?? 0) - (a.awb_manual ?? 0))[0];
 
   return (
     <div className="max-w-4xl mx-auto w-full px-6 md:px-12 py-8 md:py-14">
@@ -119,12 +144,13 @@ function Dashboard() {
               You have <strong>{todayTasks.length} visit{todayTasks.length === 1 ? "" : "s"}</strong> today.{" "}
               {riskyPartner ? (
                 <>
-                  <strong>{riskyPartner.name}</strong>'s AWB is impacted by Opcode 70 (
-                  {riskyPartner.exception_rate_opcode_70?.toFixed(1)}% exception rate). Educate them on
+                  <strong>{riskyPartner.name}</strong> still relies on{" "}
+                  <strong>{riskyPartner.awb_manual}</strong> manual AWBs vs{" "}
+                  <strong>{riskyPartner.awb_otomatis ?? 0}</strong> automated. Educate them on
                   MAA 2.0 SOP today and verify signboard placement.
                 </>
               ) : (
-                <>All partners are within nominal exception thresholds. Focus on Mitra B for PPOB cross-sell.</>
+                <>All partners are leaning automated. Focus on PPOB cross-sell opportunities today.</>
               )}
             </p>
           )}
@@ -134,7 +160,7 @@ function Dashboard() {
       {/* Quick metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         <Metric icon={<TrendingUp size={14} />} label="Week success rate" value={`${successRate}%`} hint="Opcode 80 vs 205" />
-        <Metric icon={<AlertTriangle size={14} />} label="At-risk partners" value={String(partners.filter(p => (p.exception_rate_opcode_70 ?? 0) > 10).length)} hint="Opcode 70 > 10%" />
+        <Metric icon={<AlertTriangle size={14} />} label="Manual-heavy partners" value={String(partners.filter(p => (p.awb_manual ?? 0) > (p.awb_otomatis ?? 0)).length)} hint="manual > otomatis" />
         <Metric icon={<FileText size={14} />} label="Pending admin" value={String(pendingReimb)} hint="FR_TAB_QMS_005" />
         <Metric icon={<Sparkles size={14} />} label="Active tasks" value={String(tasks.filter(t => t.status !== "Done").length)} hint={`of ${totalCount}`} />
       </div>

@@ -3,8 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Calendar, MapPin } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { Task } from "@/lib/types";
-import { PillSelect } from "@/components/ui-extras/PillSelect";
-import { priorityPill, PRIORITIES } from "@/lib/pills";
+import { EditablePillSelect } from "@/components/ui-extras/EditablePillSelect";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -49,10 +48,9 @@ export function TaskCard({ task, onOpen, onUpdate, isOverlay }: Props) {
       )}
 
       <div className="flex items-center justify-between gap-2 mt-2">
-        <PillSelect
-          value={task.priority as (typeof PRIORITIES)[number]}
-          options={PRIORITIES}
-          classMap={priorityPill}
+        <EditablePillSelect
+          field="priority"
+          value={task.priority}
           onChange={(p) => onUpdate(task.id, { priority: p })}
         />
 

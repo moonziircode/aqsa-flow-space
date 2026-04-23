@@ -25,7 +25,9 @@ export function PartnerCombobox({ value, partners, onChange, placeholder = "Sele
     return partners.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
-        (p.area ?? "").toLowerCase().includes(q)
+        (p.city ?? "").toLowerCase().includes(q) ||
+        (p.shipper ?? "").toLowerCase().includes(q) ||
+        (p.owner ?? "").toLowerCase().includes(q)
     );
   }, [partners, query]);
 
@@ -100,7 +102,7 @@ export function PartnerCombobox({ value, partners, onChange, placeholder = "Sele
                   >
                     <div className="flex-1 min-w-0">
                       <div className="text-sm truncate">{p.name}</div>
-                      {p.area && <div className="text-[11px] text-muted-foreground truncate">{p.area}</div>}
+                      {p.city && <div className="text-[11px] text-muted-foreground truncate">{p.city}</div>}
                     </div>
                     {active && <Check size={13} className="text-foreground shrink-0" />}
                   </button>

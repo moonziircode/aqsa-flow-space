@@ -4,10 +4,10 @@ import { Plus, Trash2, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Insight, Partner } from "@/lib/types";
-import { blankSpotPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CompetitorDetailDrawer } from "@/components/strategy/CompetitorDetailDrawer";
+import { recordUndo } from "@/lib/undo";
 
 export const Route = createFileRoute("/strategy")({
   head: () => ({
@@ -56,9 +56,19 @@ function StrategyPage() {
   };
 
   const delInsight = async (id: string) => {
+    const prev = insights.find((x) => x.id === id);
     setInsights((prev) => prev.filter((x) => x.id !== id));
     await supabase.from("market_insights").delete().eq("id", id);
     toast.success("Removed");
+    if (prev) {
+      recordUndo({
+        label: `Delete "${prev.competitor_name}"`,
+        undo: async () => {
+          const { data } = await supabase.from("market_insights").insert(prev as any).select().single();
+          if (data) setInsights((all) => [data as any, ...all]);
+        },
+      });
+    }
   };
 
   return (
@@ -132,31 +142,33 @@ function StrategyPage() {
 
       {/* Blank spot mapping */}
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Blank Spot Expansion</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Partner Performance</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {partners.map((p) => (
             <div key={p.id} className="border border-border rounded-md p-3">
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <div className="font-medium text-sm">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{p.area}</div>
+                  <div className="text-xs text-muted-foreground">{p.city ?? "—"}</div>
                 </div>
-                <span className={cn("inline-flex rounded text-[10px] px-1.5 py-0.5 font-medium", blankSpotPill[p.blank_spot_status ?? "covered"])}>
-                  {p.blank_spot_status}
-                </span>
+                {p.shipper && (
+                  <span className="inline-flex rounded text-[10px] px-1.5 py-0.5 font-medium bg-[var(--pill-blue-bg)] text-[var(--pill-blue-fg)]">
+                    {p.shipper}
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-1 text-[11px] text-muted-foreground">
                 <div>
-                  <div className="text-foreground font-medium">{p.awb_avg}</div>
-                  <div>AWB avg</div>
+                  <div className="text-foreground font-medium">{p.awb_otomatis ?? 0}</div>
+                  <div>AWB Oto.</div>
                 </div>
                 <div>
-                  <div className="text-foreground font-medium">{p.exception_rate_opcode_70?.toFixed(1)}%</div>
-                  <div>Op70</div>
+                  <div className="text-foreground font-medium">{p.awb_manual ?? 0}</div>
+                  <div>AWB Manual</div>
                 </div>
                 <div>
-                  <div className="text-foreground font-medium">{p.dropoff_rate_opcode_59?.toFixed(1)}%</div>
-                  <div>Op59</div>
+                  <div className="text-foreground font-medium truncate">{p.owner ?? "—"}</div>
+                  <div>Owner</div>
                 </div>
               </div>
             </div>

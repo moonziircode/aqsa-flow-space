@@ -19,11 +19,14 @@ export type Task = {
 export type Partner = {
   id: string;
   name: string;
-  area: string | null;
-  awb_avg: number | null;
-  exception_rate_opcode_70: number | null;
-  dropoff_rate_opcode_59: number | null;
-  blank_spot_status: string | null;
+  city: string | null;
+  shipper: string | null;
+  trend_shipper: string | null;
+  awb_otomatis: number | null;
+  trend_awb_otomatis: string | null;
+  awb_manual: number | null;
+  owner: string | null;
+  longlat: string | null;
 };
 
 export type Insight = {

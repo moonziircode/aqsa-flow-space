@@ -23,6 +23,7 @@ import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
 import { STATUSES, statusPill, priorityPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { recordUndo } from "@/lib/undo";
 
 export const Route = createFileRoute("/workspace")({
   head: () => ({
@@ -82,7 +83,7 @@ function WorkspacePage() {
       (t.status ?? "").toLowerCase().includes(q) ||
       (t.priority ?? "").toLowerCase().includes(q) ||
       (t.partner?.name ?? "").toLowerCase().includes(q) ||
-      (t.partner?.area ?? "").toLowerCase().includes(q)
+      (t.partner?.city ?? "").toLowerCase().includes(q)
     );
   };
 
@@ -107,6 +108,7 @@ function WorkspacePage() {
   }, [activeTasks]);
 
   const updateTask = async (id: string, patch: Partial<Task>) => {
+    const prev = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     const { partner, ...dbPatch } = patch as any;
     const { error } = await supabase.from("tasks").update(dbPatch).eq("id", id);
@@ -116,14 +118,38 @@ function WorkspacePage() {
       return;
     }
     if (openTask?.id === id) setOpenTask((o) => (o ? { ...o, ...patch } : o));
+    if (prev) {
+      const inverse: any = {};
+      Object.keys(dbPatch).forEach((k) => { inverse[k] = (prev as any)[k]; });
+      recordUndo({
+        label: `Edit "${prev.title}"`,
+        undo: async () => {
+          setTasks((all) => all.map((t) => (t.id === id ? { ...t, ...inverse } : t)));
+          await supabase.from("tasks").update(inverse).eq("id", id);
+        },
+      });
+    }
   };
 
   const deleteTask = async (id: string) => {
+    const prev = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setOpenTask(null);
     const { error } = await supabase.from("tasks").delete().eq("id", id);
     if (error) toast.error("Delete failed");
-    else toast.success("Task deleted");
+    else {
+      toast.success("Task deleted");
+      if (prev) {
+        const { partner, ...row } = prev as any;
+        recordUndo({
+          label: `Delete "${prev.title}"`,
+          undo: async () => {
+            const { data } = await supabase.from("tasks").insert(row).select("*, partner:partners(*)").single();
+            if (data) setTasks((all) => [...all, data as any]);
+          },
+        });
+      }
+    }
   };
 
   const addTask = async (status: string) => {

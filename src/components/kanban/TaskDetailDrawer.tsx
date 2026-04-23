@@ -3,9 +3,8 @@ import { X, MapPin, Camera, CheckSquare, Square, Trash2, Save } from "lucide-rea
 import { format, parseISO } from "date-fns";
 import type { Task, Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
-import { PillSelect } from "@/components/ui-extras/PillSelect";
+import { EditablePillSelect } from "@/components/ui-extras/EditablePillSelect";
 import { PartnerCombobox } from "@/components/ui-extras/PartnerCombobox";
-import { priorityPill, statusPill, typePill, PRIORITIES, STATUSES, TYPES } from "@/lib/pills";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -159,15 +158,15 @@ export function TaskDetailDrawer({ task, partners, onClose, onUpdate, onDelete }
           <div className="grid grid-cols-[120px_1fr] gap-y-2 gap-x-4 text-sm">
             <div className="text-muted-foreground py-1">Status</div>
             <div>
-              <PillSelect value={task.status} options={STATUSES} classMap={statusPill} onChange={(s) => onUpdate(task.id, { status: s })} size="sm" showCaret />
+              <EditablePillSelect field="status" value={task.status} onChange={(s) => onUpdate(task.id, { status: s })} size="sm" showCaret />
             </div>
             <div className="text-muted-foreground py-1">Priority</div>
             <div>
-              <PillSelect value={task.priority} options={PRIORITIES} classMap={priorityPill} onChange={(p) => onUpdate(task.id, { priority: p })} size="sm" showCaret />
+              <EditablePillSelect field="priority" value={task.priority} onChange={(p) => onUpdate(task.id, { priority: p })} size="sm" showCaret />
             </div>
             <div className="text-muted-foreground py-1">Type</div>
             <div>
-              <PillSelect value={task.type} options={TYPES} classMap={typePill} onChange={(t) => onUpdate(task.id, { type: t })} size="sm" showCaret />
+              <EditablePillSelect field="type" value={task.type} onChange={(t) => onUpdate(task.id, { type: t })} size="sm" showCaret />
             </div>
             <div className="text-muted-foreground py-1">Due date</div>
             <div>

@@ -14,27 +14,40 @@ type Props = {
 
 type Row = {
   name: string;
-  area?: string | null;
-  awb_avg?: number | null;
-  exception_rate_opcode_70?: number | null;
-  dropoff_rate_opcode_59?: number | null;
+  city?: string | null;
+  shipper?: string | null;
+  trend_shipper?: string | null;
+  awb_otomatis?: number | null;
+  trend_awb_otomatis?: string | null;
+  awb_manual?: number | null;
+  owner?: string | null;
+  longlat?: string | null;
 };
 
 const COLUMN_ALIASES: Record<string, keyof Row> = {
   name: "name",
+  external_store_name: "name",
+  store_name: "name",
   partner: "name",
   partner_name: "name",
   mitra: "name",
-  area: "area",
-  region: "area",
-  city: "area",
-  awb_avg: "awb_avg",
-  awb: "awb_avg",
-  exception_rate_opcode_70: "exception_rate_opcode_70",
-  op70: "exception_rate_opcode_70",
-  dropoff_rate_opcode_59: "dropoff_rate_opcode_59",
-  op59: "dropoff_rate_opcode_59",
+  city: "city",
+  area: "city",
+  region: "city",
+  shipper: "shipper",
+  trend_shipper: "trend_shipper",
+  awb_otomatis: "awb_otomatis",
+  awb_oto: "awb_otomatis",
+  trend_awb_otomatis: "trend_awb_otomatis",
+  trend_awb_oto: "trend_awb_otomatis",
+  awb_manual: "awb_manual",
+  owner: "owner",
+  longlat: "longlat",
+  latlng: "longlat",
+  coordinates: "longlat",
 };
+
+const NUMERIC: Set<keyof Row> = new Set(["awb_otomatis", "awb_manual"]);
 
 function normalizeKey(k: string) {
   return k.trim().toLowerCase().replace(/\s+/g, "_");
@@ -45,11 +58,11 @@ function mapRow(raw: Record<string, any>): Row | null {
   for (const [k, v] of Object.entries(raw)) {
     const alias = COLUMN_ALIASES[normalizeKey(k)];
     if (!alias) continue;
-    if (alias === "name" || alias === "area") {
-      (out as any)[alias] = v == null ? "" : String(v).trim();
-    } else {
+    if (NUMERIC.has(alias)) {
       const num = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/,/g, ""));
       (out as any)[alias] = isNaN(num) ? null : num;
+    } else {
+      (out as any)[alias] = v == null ? "" : String(v).trim();
     }
   }
   if (!out.name) return null;
@@ -99,7 +112,7 @@ export function PartnerImportDialog({ open, onClose, onImported }: Props) {
       }
       setRows(mapped);
       setSkipped(drop);
-      if (mapped.length === 0) toast.error("No valid rows found. Required column: name.");
+      if (mapped.length === 0) toast.error("No valid rows found. Required column: name (or external_store_name).");
     } catch (e: any) {
       toast.error(e.message || "Failed to read file");
     }
@@ -136,7 +149,7 @@ export function PartnerImportDialog({ open, onClose, onImported }: Props) {
 
         <div className="p-5 space-y-4">
           <div className="text-xs text-muted-foreground leading-relaxed">
-            Upload a <strong>.csv</strong>, <strong>.xlsx</strong> or <strong>.xls</strong> file. Required column: <code className="font-mono bg-muted px-1 rounded">name</code>. Optional: <code className="font-mono bg-muted px-1 rounded">area</code>, <code className="font-mono bg-muted px-1 rounded">awb_avg</code>, <code className="font-mono bg-muted px-1 rounded">exception_rate_opcode_70</code>, <code className="font-mono bg-muted px-1 rounded">dropoff_rate_opcode_59</code>.
+            Upload a <strong>.csv</strong>, <strong>.xlsx</strong> or <strong>.xls</strong> file. Required column: <code className="font-mono bg-muted px-1 rounded">name</code> (or <code className="font-mono bg-muted px-1 rounded">external_store_name</code>). Optional: <code className="font-mono bg-muted px-1 rounded">city</code>, <code className="font-mono bg-muted px-1 rounded">shipper</code>, <code className="font-mono bg-muted px-1 rounded">trend_shipper</code>, <code className="font-mono bg-muted px-1 rounded">awb_otomatis</code>, <code className="font-mono bg-muted px-1 rounded">trend_awb_otomatis</code>, <code className="font-mono bg-muted px-1 rounded">awb_manual</code>, <code className="font-mono bg-muted px-1 rounded">owner</code>, <code className="font-mono bg-muted px-1 rounded">longlat</code>.
           </div>
 
           <label
@@ -178,16 +191,18 @@ export function PartnerImportDialog({ open, onClose, onImported }: Props) {
                   <thead className="text-muted-foreground">
                     <tr className="border-b border-border">
                       <th className="text-left font-normal px-3 py-1.5">Name</th>
-                      <th className="text-left font-normal px-3 py-1.5">Area</th>
-                      <th className="text-right font-normal px-3 py-1.5">AWB</th>
+                      <th className="text-left font-normal px-3 py-1.5">City</th>
+                      <th className="text-left font-normal px-3 py-1.5">Shipper</th>
+                      <th className="text-right font-normal px-3 py-1.5">AWB Oto.</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rows.slice(0, 8).map((r, i) => (
                       <tr key={i} className="border-b border-border last:border-0">
                         <td className="px-3 py-1.5 font-medium">{r.name}</td>
-                        <td className="px-3 py-1.5 text-muted-foreground">{r.area || "—"}</td>
-                        <td className="px-3 py-1.5 text-right font-mono">{r.awb_avg ?? "—"}</td>
+                        <td className="px-3 py-1.5 text-muted-foreground">{r.city || "—"}</td>
+                        <td className="px-3 py-1.5 text-muted-foreground">{r.shipper || "—"}</td>
+                        <td className="px-3 py-1.5 text-right font-mono">{r.awb_otomatis ?? "—"}</td>
                       </tr>
                     ))}
                   </tbody>
