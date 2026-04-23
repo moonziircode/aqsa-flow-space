@@ -4,7 +4,6 @@ import { Plus, Trash2, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Insight, Partner } from "@/lib/types";
-import { blankSpotPill } from "@/lib/pills";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CompetitorDetailDrawer } from "@/components/strategy/CompetitorDetailDrawer";
