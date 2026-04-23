@@ -143,12 +143,18 @@ export function AddPartnerDialog({ open, onClose, onCreated }: Props) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {field("Shipper", "shipper", { placeholder: "Primary shipper" })}
-            {field("Trend Shipper", "trend_shipper", { placeholder: "↑ growing / ↓ declining / →" })}
+            {field("Trend Shipper", "trend_shipper", {
+              placeholder: "e.g. 12,1 or -34.5",
+              hint: "percentage, 1 decimal",
+            })}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {field("AWB Otomatis", "awb_otomatis", { type: "number", placeholder: "0", hint: "automated AWBs" })}
-            {field("Trend AWB Otomatis", "trend_awb_otomatis", { placeholder: "↑ / ↓ / flat" })}
+            {field("Trend AWB Otomatis", "trend_awb_otomatis", {
+              placeholder: "e.g. 121,8 or -134.7",
+              hint: "percentage, 1 decimal",
+            })}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
