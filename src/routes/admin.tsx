@@ -9,6 +9,7 @@ import { reimbStatusPill } from "@/lib/pills";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ReimbursementDetailDrawer } from "@/components/admin/ReimbursementDetailDrawer";
+import { recordUndo } from "@/lib/undo";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -54,9 +55,19 @@ function AdminPage() {
   };
 
   const del = async (id: string) => {
+    const prev = rows.find((r) => r.id === id);
     setRows((p) => p.filter((x) => x.id !== id));
     await supabase.from("admin_reimbursements").delete().eq("id", id);
     toast.success("Removed");
+    if (prev) {
+      recordUndo({
+        label: `Delete claim`,
+        undo: async () => {
+          const { data } = await supabase.from("admin_reimbursements").insert(prev as any).select().single();
+          if (data) setRows((p) => [data as any, ...p]);
+        },
+      });
+    }
   };
 
   const uploadReceipt = async (row: Reimbursement, file: File) => {

@@ -7,6 +7,7 @@ import type { Insight, Partner } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CompetitorDetailDrawer } from "@/components/strategy/CompetitorDetailDrawer";
+import { recordUndo } from "@/lib/undo";
 
 export const Route = createFileRoute("/strategy")({
   head: () => ({
@@ -55,9 +56,19 @@ function StrategyPage() {
   };
 
   const delInsight = async (id: string) => {
+    const prev = insights.find((x) => x.id === id);
     setInsights((prev) => prev.filter((x) => x.id !== id));
     await supabase.from("market_insights").delete().eq("id", id);
     toast.success("Removed");
+    if (prev) {
+      recordUndo({
+        label: `Delete "${prev.competitor_name}"`,
+        undo: async () => {
+          const { data } = await supabase.from("market_insights").insert(prev as any).select().single();
+          if (data) setInsights((all) => [data as any, ...all]);
+        },
+      });
+    }
   };
 
   return (
