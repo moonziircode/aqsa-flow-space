@@ -82,7 +82,7 @@ function WorkspacePage() {
       (t.status ?? "").toLowerCase().includes(q) ||
       (t.priority ?? "").toLowerCase().includes(q) ||
       (t.partner?.name ?? "").toLowerCase().includes(q) ||
-      (t.partner?.area ?? "").toLowerCase().includes(q)
+      (t.partner?.city ?? "").toLowerCase().includes(q)
     );
   };
 
