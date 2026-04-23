@@ -76,36 +76,78 @@ export type Database = {
       }
       partners: {
         Row: {
-          area: string | null
-          awb_avg: number | null
-          blank_spot_status: string | null
+          awb_manual: number | null
+          awb_otomatis: number | null
+          city: string | null
           created_at: string
-          dropoff_rate_opcode_59: number | null
-          exception_rate_opcode_70: number | null
           id: string
+          longlat: string | null
           name: string
+          owner: string | null
+          shipper: string | null
+          trend_awb_otomatis: string | null
+          trend_shipper: string | null
           updated_at: string
         }
         Insert: {
-          area?: string | null
-          awb_avg?: number | null
-          blank_spot_status?: string | null
+          awb_manual?: number | null
+          awb_otomatis?: number | null
+          city?: string | null
           created_at?: string
-          dropoff_rate_opcode_59?: number | null
-          exception_rate_opcode_70?: number | null
           id?: string
+          longlat?: string | null
           name: string
+          owner?: string | null
+          shipper?: string | null
+          trend_awb_otomatis?: string | null
+          trend_shipper?: string | null
           updated_at?: string
         }
         Update: {
-          area?: string | null
-          awb_avg?: number | null
-          blank_spot_status?: string | null
+          awb_manual?: number | null
+          awb_otomatis?: number | null
+          city?: string | null
           created_at?: string
-          dropoff_rate_opcode_59?: number | null
-          exception_rate_opcode_70?: number | null
           id?: string
+          longlat?: string | null
           name?: string
+          owner?: string | null
+          shipper?: string | null
+          trend_awb_otomatis?: string | null
+          trend_shipper?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      select_options: {
+        Row: {
+          bg_color: string
+          created_at: string
+          fg_color: string
+          field: string
+          id: string
+          label: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          bg_color?: string
+          created_at?: string
+          fg_color?: string
+          field: string
+          id?: string
+          label: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          bg_color?: string
+          created_at?: string
+          fg_color?: string
+          field?: string
+          id?: string
+          label?: string
+          position?: number
           updated_at?: string
         }
         Relationships: []
