@@ -3,6 +3,7 @@ import { X, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Partner } from "@/lib/types";
+import { parsePercentInput } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -48,14 +49,24 @@ export function AddPartnerDialog({ open, onClose, onCreated }: Props) {
       toast.error("External Store Name is required");
       return;
     }
+    const trendShipperParsed = parsePercentInput(form.trend_shipper);
+    const trendAwbParsed = parsePercentInput(form.trend_awb_otomatis);
+    if (trendShipperParsed === null) {
+      toast.error("Trend Shipper must be a percentage, e.g. 12,1");
+      return;
+    }
+    if (trendAwbParsed === null) {
+      toast.error("Trend AWB Otomatis must be a percentage, e.g. -134,7");
+      return;
+    }
     setSaving(true);
     const payload = {
       name: form.name.trim(),
       city: form.city.trim() || null,
       shipper: form.shipper.trim() || null,
-      trend_shipper: form.trend_shipper.trim() || null,
+      trend_shipper: trendShipperParsed || null,
       awb_otomatis: form.awb_otomatis ? parseFloat(form.awb_otomatis) : 0,
-      trend_awb_otomatis: form.trend_awb_otomatis.trim() || null,
+      trend_awb_otomatis: trendAwbParsed || null,
       awb_manual: form.awb_manual ? parseFloat(form.awb_manual) : 0,
       owner: form.owner.trim() || null,
       longlat: form.longlat.trim() || null,
