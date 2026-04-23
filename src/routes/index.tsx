@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { WeeklyCalendar } from "@/components/calendar/WeeklyCalendar";
 import { TaskDetailDrawer } from "@/components/kanban/TaskDetailDrawer";
 import { toast } from "sonner";
+import { recordUndo } from "@/lib/undo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -45,18 +46,41 @@ function Dashboard() {
   };
 
   const updateTask = async (id: string, patch: Partial<Task>) => {
+    const prev = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     const { partner, ...dbPatch } = patch as any;
     const { error } = await supabase.from("tasks").update(dbPatch).eq("id", id);
     if (error) { toast.error("Save failed"); refresh(); return; }
     if (openTask?.id === id) setOpenTask((o) => (o ? { ...o, ...patch } : o));
+    if (prev) {
+      const inverse: any = {};
+      Object.keys(dbPatch).forEach((k) => { inverse[k] = (prev as any)[k]; });
+      recordUndo({
+        label: `Edit "${prev.title}"`,
+        undo: async () => {
+          setTasks((all) => all.map((t) => (t.id === id ? { ...t, ...inverse } : t)));
+          await supabase.from("tasks").update(inverse).eq("id", id);
+        },
+      });
+    }
   };
 
   const deleteTask = async (id: string) => {
+    const prev = tasks.find((t) => t.id === id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setOpenTask(null);
     await supabase.from("tasks").delete().eq("id", id);
     toast.success("Task deleted");
+    if (prev) {
+      const { partner, ...row } = prev as any;
+      recordUndo({
+        label: `Delete "${prev.title}"`,
+        undo: async () => {
+          const { data } = await supabase.from("tasks").insert(row).select("*, partner:partners(*)").single();
+          if (data) setTasks((all) => [...all, data as any]);
+        },
+      });
+    }
   };
 
   const addTask = async () => {
