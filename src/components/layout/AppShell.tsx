@@ -20,29 +20,32 @@ export function AppShell() {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-border bg-[var(--sidebar-bg)] transition-[width] duration-200",
+          "hidden md:flex flex-col border-r border-black/5 bg-[#fbfbfa] dark:bg-neutral-900 transition-[width] duration-200",
           collapsed ? "w-14" : "w-60"
         )}
       >
-        <div className="flex items-center justify-between px-3 h-12 border-b border-border">
+        <div className="group/header flex items-center justify-between px-3 h-11">
           {!collapsed && (
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="text-base">🛰️</span>
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground/90">
+              <span className="text-sm">🛰️</span>
               <span>AqsaSpace</span>
             </div>
           )}
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="p-1 rounded hover:bg-[var(--hover-bg)] text-muted-foreground"
+            className={cn(
+              "p-1 rounded-sm text-muted-foreground hover:bg-black/5 transition-opacity",
+              !collapsed && "opacity-0 group-hover/header:opacity-100"
+            )}
             aria-label="Toggle sidebar"
           >
-            {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+            {collapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
           </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-0.5">
+        <nav className="flex-1 px-2 pt-1 pb-2 space-y-px">
           {!collapsed && (
-            <div className="px-2 pt-2 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+            <div className="px-2 pt-2 pb-1 text-[11px] font-medium tracking-wider text-muted-foreground/70">
               Workspace
             </div>
           )}
@@ -54,11 +57,13 @@ export function AppShell() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors",
-                  active ? "bg-[var(--hover-bg)] font-medium" : "hover:bg-[var(--hover-bg)] text-foreground/80"
+                  "group min-h-[27px] text-sm py-1 px-2 w-full flex items-center gap-2 rounded-sm font-medium transition-colors",
+                  active
+                    ? "bg-primary/5 text-primary"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
                 )}
               >
-                <Icon size={16} className="shrink-0" />
+                <Icon size={16} className="shrink-0 opacity-80" />
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
@@ -66,8 +71,8 @@ export function AppShell() {
         </nav>
 
         {!collapsed && (
-          <div className="p-3 border-t border-border text-xs text-muted-foreground">
-            <div className="font-medium text-foreground">Aqsa</div>
+          <div className="px-3 py-2.5 text-[11px] text-muted-foreground">
+            <div className="text-xs font-medium text-foreground">Aqsa</div>
             <div>Field Executive</div>
           </div>
         )}
@@ -79,7 +84,7 @@ export function AppShell() {
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 h-14 border-t border-border bg-background flex">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 h-14 border-t border-black/5 bg-[#fbfbfa] dark:bg-neutral-900 flex">
         {nav.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.to;
@@ -89,10 +94,10 @@ export function AppShell() {
               to={item.to}
               className={cn(
                 "flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px]",
-                active ? "text-foreground font-medium" : "text-muted-foreground"
+                active ? "text-primary font-medium" : "text-muted-foreground"
               )}
             >
-              <Icon size={18} />
+              <Icon size={16} />
               <span>{item.label}</span>
             </Link>
           );
