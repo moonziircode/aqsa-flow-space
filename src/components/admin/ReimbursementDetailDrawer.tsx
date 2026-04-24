@@ -7,6 +7,7 @@ import { PillSelect } from "@/components/ui-extras/PillSelect";
 import { reimbStatusPill } from "@/lib/pills";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useSignedUrl } from "@/lib/signedUrl";
 
 type Props = {
   row: Reimbursement | null;
@@ -68,8 +69,8 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
       const path = `${row.id}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("receipts").upload(path, file, { upsert: true });
       if (error) throw error;
-      const { data } = supabase.storage.from("receipts").getPublicUrl(path);
-      await onUpdate(row.id, { receipt_image_url: data.publicUrl });
+      // Store the storage path — bucket is private, we sign URLs on demand.
+      await onUpdate(row.id, { receipt_image_url: path });
       toast.success("Receipt attached");
     } catch (e: any) {
       toast.error(e.message || "Upload failed");
@@ -77,6 +78,8 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
       setUploading(false);
     }
   };
+
+  const receiptUrl = useSignedUrl("receipts", row.receipt_image_url);
 
   return (
     <div className="fixed inset-0 z-50 flex">
@@ -187,9 +190,9 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
                   }}
                 />
               </label>
-              {row.receipt_image_url && (
+              {row.receipt_image_url && receiptUrl && (
                 <a
-                  href={row.receipt_image_url}
+                  href={receiptUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm px-3 py-1.5 border border-border rounded hover:bg-[var(--hover-bg)]"
@@ -198,10 +201,10 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
                 </a>
               )}
             </div>
-            {row.receipt_image_url && (
-              <a href={row.receipt_image_url} target="_blank" rel="noreferrer" className="block mt-3">
+            {row.receipt_image_url && receiptUrl && (
+              <a href={receiptUrl} target="_blank" rel="noreferrer" className="block mt-3">
                 <img
-                  src={row.receipt_image_url}
+                  src={receiptUrl}
                   alt="Receipt"
                   className="rounded-md border border-border max-h-72 object-cover"
                 />

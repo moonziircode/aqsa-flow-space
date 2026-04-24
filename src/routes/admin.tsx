@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ReimbursementDetailDrawer } from "@/components/admin/ReimbursementDetailDrawer";
 import { recordUndo } from "@/lib/undo";
+import { useSignedUrl } from "@/lib/signedUrl";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -76,8 +77,9 @@ function AdminPage() {
       const path = `${row.id}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("receipts").upload(path, file, { upsert: true });
       if (error) throw error;
-      const { data } = supabase.storage.from("receipts").getPublicUrl(path);
-      await update(row.id, { receipt_image_url: data.publicUrl });
+      // Store the storage path. The `receipts` bucket is private and we
+      // resolve a short-lived signed URL on demand for display.
+      await update(row.id, { receipt_image_url: path });
       toast.success("Receipt attached");
     } catch (e: any) {
       toast.error(e.message);
@@ -150,16 +152,7 @@ function AdminPage() {
                   <PillSelect value={r.status as any} options={STATUS} classMap={reimbStatusPill} onChange={(v) => update(r.id, { status: v })} showCaret />
                 </td>
                 <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                  {r.receipt_image_url ? (
-                    <a href={r.receipt_image_url} target="_blank" rel="noreferrer" className="text-xs underline text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-                      <FileText size={12} /> View
-                    </a>
-                  ) : (
-                    <label className={cn("text-xs inline-flex items-center gap-1 cursor-pointer text-muted-foreground hover:text-foreground")}>
-                      <Camera size={12} /> Upload
-                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadReceipt(r, f); }} />
-                    </label>
-                  )}
+                  <ReceiptCell row={r} onUpload={(f) => uploadReceipt(r, f)} />
                 </td>
                 <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">
                   {format(parseISO(r.created_at), "d MMM")}
@@ -177,5 +170,40 @@ function AdminPage() {
 
       <ReimbursementDetailDrawer row={openRow} onClose={() => setOpenRow(null)} onUpdate={update} onDelete={del} />
     </div>
+  );
+}
+
+function ReceiptCell({
+  row,
+  onUpload,
+}: {
+  row: Reimbursement;
+  onUpload: (file: File) => void;
+}) {
+  const url = useSignedUrl("receipts", row.receipt_image_url);
+  if (row.receipt_image_url && url) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer" className="text-xs underline text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+        <FileText size={12} /> View
+      </a>
+    );
+  }
+  if (row.receipt_image_url && !url) {
+    return <span className="text-xs text-muted-foreground">Loading…</span>;
+  }
+  return (
+    <label className={cn("text-xs inline-flex items-center gap-1 cursor-pointer text-muted-foreground hover:text-foreground")}>
+      <Camera size={12} /> Upload
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onUpload(f);
+        }}
+      />
+    </label>
   );
 }
