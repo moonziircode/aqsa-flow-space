@@ -32,22 +32,22 @@ export function TaskCard({ task, onOpen, onUpdate, isOverlay }: Props) {
       {...listeners}
       onClick={() => !isDragging && onOpen(task)}
       className={cn(
-        "group bg-card border border-border rounded-md p-3 cursor-grab active:cursor-grabbing select-none shadow-sm hover:shadow transition-shadow",
-        isDragging && "opacity-30",
-        isOverlay && "shadow-lg rotate-1"
+        "group bg-background border border-border/50 rounded-md p-2.5 cursor-grab active:cursor-grabbing select-none shadow-none hover:shadow-sm hover:border-border transition-all",
+        isDragging && "opacity-40",
+        isOverlay && "shadow-md rotate-1 border-border"
       )}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="text-sm font-medium leading-snug line-clamp-2">{task.title}</div>
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className="text-sm font-medium leading-snug text-foreground line-clamp-2">{task.title}</div>
       </div>
 
       {task.partner?.name && (
-        <div className="text-[11px] text-muted-foreground mb-2 truncate">
+        <div className="text-[11px] text-muted-foreground mb-1.5 truncate">
           📍 {task.partner.name}
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 mt-2">
+      <div className="flex items-center justify-between gap-2 mt-1.5">
         <EditablePillSelect
           field="priority"
           value={task.priority}
@@ -55,16 +55,16 @@ export function TaskCard({ task, onOpen, onUpdate, isOverlay }: Props) {
         />
 
         {task.due_date && (
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Calendar size={10} />
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Calendar size={12} />
             {format(parseISO(task.due_date), "d MMM")}
           </div>
         )}
       </div>
 
       {task.location_lat_lng && (
-        <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
-          <MapPin size={10} /> Geo-tagged
+        <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+          <MapPin size={12} /> Geo-tagged
         </div>
       )}
     </div>
