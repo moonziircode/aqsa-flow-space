@@ -1,8 +1,7 @@
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, KanbanSquare, Sparkles, Receipt, Users, ChevronsLeft, ChevronsRight, LogOut } from "lucide-react";
+import { LayoutDashboard, KanbanSquare, Sparkles, Receipt, Users, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/auth";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -15,7 +14,6 @@ const nav = [
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const { pathname } = useLocation();
-  const { user, signOut } = useAuth();
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -72,17 +70,6 @@ export function AppShell() {
           })}
         </nav>
 
-        {!collapsed && (
-          <div className="px-3 py-2.5 text-[11px] text-muted-foreground border-t border-black/5">
-            <div className="text-xs font-medium text-foreground truncate">{user?.email ?? "Signed in"}</div>
-            <button
-              onClick={() => signOut()}
-              className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              <LogOut size={11} /> Sign out
-            </button>
-          </div>
-        )}
       </aside>
 
       {/* Main area */}
