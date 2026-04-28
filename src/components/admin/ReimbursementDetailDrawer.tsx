@@ -3,8 +3,7 @@ import { X, Camera, Trash2, Save, Receipt } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { Reimbursement } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
-import { PillSelect } from "@/components/ui-extras/PillSelect";
-import { reimbStatusPill } from "@/lib/pills";
+import { EditablePillSelect } from "@/components/ui-extras/EditablePillSelect";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSignedUrl } from "@/lib/signedUrl";
@@ -14,13 +13,6 @@ type Props = {
   onClose: () => void;
   onUpdate: (id: string, patch: Partial<Reimbursement>) => Promise<void> | void;
   onDelete: (id: string) => void;
-};
-
-const FORMS = ["SPD", "UM"] as const;
-const STATUS = ["Pending", "Approved", "Rejected"] as const;
-const formPill = {
-  SPD: "bg-[var(--pill-blue-bg)] text-[var(--pill-blue-fg)]",
-  UM: "bg-[var(--pill-purple-bg)] text-[var(--pill-purple-fg)]",
 };
 
 export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: Props) {
@@ -130,10 +122,9 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
           <div className="grid grid-cols-[120px_1fr] gap-y-2 gap-x-4 text-sm">
             <div className="text-muted-foreground py-1">Form type</div>
             <div>
-              <PillSelect
-                value={row.form_type as any}
-                options={FORMS}
-                classMap={formPill}
+              <EditablePillSelect
+                field="reimb_form"
+                value={row.form_type}
                 onChange={(v) => onUpdate(row.id, { form_type: v })}
                 size="sm"
                 showCaret
@@ -141,10 +132,9 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
             </div>
             <div className="text-muted-foreground py-1">Status</div>
             <div>
-              <PillSelect
-                value={row.status as any}
-                options={STATUS}
-                classMap={reimbStatusPill}
+              <EditablePillSelect
+                field="reimb_status"
+                value={row.status}
                 onChange={(v) => onUpdate(row.id, { status: v })}
                 size="sm"
                 showCaret
