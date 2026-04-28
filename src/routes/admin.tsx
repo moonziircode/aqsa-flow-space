@@ -4,8 +4,7 @@ import { Receipt, Plus, Trash2, Camera, FileText } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Reimbursement } from "@/lib/types";
-import { PillSelect } from "@/components/ui-extras/PillSelect";
-import { reimbStatusPill } from "@/lib/pills";
+import { EditablePillSelect } from "@/components/ui-extras/EditablePillSelect";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ReimbursementDetailDrawer } from "@/components/admin/ReimbursementDetailDrawer";
@@ -21,9 +20,6 @@ export const Route = createFileRoute("/admin")({
   }),
   component: AdminPage,
 });
-
-const FORMS = ["SPD", "UM"] as const;
-const STATUS = ["Pending", "Approved", "Rejected"] as const;
 
 function AdminPage() {
   const [rows, setRows] = useState<Reimbursement[]>([]);
@@ -133,7 +129,7 @@ function AdminPage() {
               : rows.map((r) => (
               <tr key={r.id} className="hover:bg-[var(--hover-bg)] group cursor-pointer" onClick={() => setOpenRow(r)}>
                 <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                  <PillSelect value={r.form_type as any} options={FORMS} classMap={{ SPD: "bg-[var(--pill-blue-bg)] text-[var(--pill-blue-fg)]", UM: "bg-[var(--pill-purple-bg)] text-[var(--pill-purple-fg)]" }} onChange={(v) => update(r.id, { form_type: v })} />
+                  <EditablePillSelect field="reimb_form" value={r.form_type} onChange={(v) => update(r.id, { form_type: v })} showCaret />
                 </td>
                 <td className="px-3 py-2">
                   <span className={cn("truncate block max-w-[280px]", !r.description && "text-muted-foreground")}>
@@ -149,7 +145,7 @@ function AdminPage() {
                   />
                 </td>
                 <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                  <PillSelect value={r.status as any} options={STATUS} classMap={reimbStatusPill} onChange={(v) => update(r.id, { status: v })} showCaret />
+                  <EditablePillSelect field="reimb_status" value={r.status} onChange={(v) => update(r.id, { status: v })} showCaret />
                 </td>
                 <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                   <ReceiptCell row={r} onUpload={(f) => uploadReceipt(r, f)} />
