@@ -5,8 +5,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { useGlobalUndoHotkey } from "@/lib/undo";
 import { useEffect } from "react";
 import { ensureSelectOptions } from "@/lib/selectOptions";
-import { AuthProvider, useAuth } from "@/lib/auth";
-import { LoginScreen } from "@/components/auth/LoginScreen";
 
 function NotFoundComponent() {
   return (
@@ -63,26 +61,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   useGlobalUndoHotkey();
-  return (
-    <AuthProvider>
-      <AuthGate />
-      <Toaster position="top-right" />
-    </AuthProvider>
-  );
-}
-
-function AuthGate() {
-  const { user, loading } = useAuth();
   useEffect(() => {
-    if (user) ensureSelectOptions().catch(() => {});
-  }, [user]);
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fbfbfa]">
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      </div>
-    );
-  }
-  if (!user) return <LoginScreen />;
-  return <AppShell />;
+    ensureSelectOptions().catch(() => {});
+  }, []);
+  return (
+    <>
+      <AppShell />
+      <Toaster position="top-right" />
+    </>
+  );
 }
