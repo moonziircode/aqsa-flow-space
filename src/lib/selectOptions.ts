@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
  * Currently powers the task Status, Priority and Type fields.
  */
 
-export type SelectField = "status" | "priority" | "type";
+export type SelectField = "status" | "priority" | "type" | "reimb_form" | "reimb_status";
 
 export type SelectOption = {
   id: string;
