@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Receipt, Plus, Trash2, Camera, FileText } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Reimbursement } from "@/lib/types";
 import { EditablePillSelect } from "@/components/ui-extras/EditablePillSelect";
@@ -19,6 +19,18 @@ export const Route = createFileRoute("/admin")({
     ],
   }),
   component: AdminPage,
+  errorComponent: ({ error, reset }) => (
+    <div className="max-w-md mx-auto px-6 py-16 text-center">
+      <h1 className="text-xl font-semibold mb-2">Couldn't load reimbursements</h1>
+      <p className="text-sm text-muted-foreground mb-4">{error?.message ?? "Unexpected error"}</p>
+      <button
+        onClick={() => reset()}
+        className="text-sm px-3 py-1.5 rounded-md border border-border hover:bg-[var(--hover-bg)]"
+      >
+        Try again
+      </button>
+    </div>
+  ),
 });
 
 function AdminPage() {
@@ -151,7 +163,15 @@ function AdminPage() {
                   <ReceiptCell row={r} onUpload={(f) => uploadReceipt(r, f)} />
                 </td>
                 <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">
-                  {format(parseISO(r.created_at), "d MMM")}
+                  {(() => {
+                    try {
+                      if (!r.created_at) return "";
+                      const d = parseISO(r.created_at);
+                      return isValid(d) ? format(d, "d MMM") : "";
+                    } catch {
+                      return "";
+                    }
+                  })()}
                 </td>
                 <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
                   <button onClick={() => del(r.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">

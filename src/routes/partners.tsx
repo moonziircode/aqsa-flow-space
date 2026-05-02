@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Users, Plus, Trash2, Upload, MapPin } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Users, Plus, Trash2, Upload, MapPin, ArrowUp, ArrowDown, ArrowUpDown, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Partner } from "@/lib/types";
 import { InlineEdit } from "@/components/ui-extras/InlineEdit";
@@ -25,6 +25,11 @@ function PartnersPage() {
   const [loading, setLoading] = useState(true);
   const [importOpen, setImportOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<null | "shipper" | "trend_shipper" | "awb_otomatis" | "trend_awb_otomatis">(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [cityFilter, setCityFilter] = useState<string>("");
+  const [periodStartFilter, setPeriodStartFilter] = useState<string>("");
+  const [periodEndFilter, setPeriodEndFilter] = useState<string>("");
 
   useEffect(() => { load(); }, []);
   const load = async () => {
@@ -77,6 +82,55 @@ function PartnersPage() {
     });
   };
 
+  const cities = useMemo(() => {
+    const set = new Set<string>();
+    partners.forEach((p) => p.city && set.add(p.city));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [partners]);
+
+  const toNumber = (v: unknown): number => {
+    if (v === null || v === undefined || v === "") return Number.NEGATIVE_INFINITY;
+    if (typeof v === "number") return Number.isFinite(v) ? v : Number.NEGATIVE_INFINITY;
+    const n = parseFloat(String(v).replace(",", "."));
+    return Number.isFinite(n) ? n : Number.NEGATIVE_INFINITY;
+  };
+
+  const visible = useMemo(() => {
+    let list = partners;
+    if (cityFilter) list = list.filter((p) => (p.city ?? "") === cityFilter);
+    if (periodStartFilter) list = list.filter((p) => (p.period_start ?? "") >= periodStartFilter);
+    if (periodEndFilter) list = list.filter((p) => (p.period_end ?? "") <= periodEndFilter);
+    if (sortBy) {
+      const dir = sortDir === "asc" ? 1 : -1;
+      list = [...list].sort((a, b) => {
+        if (sortBy === "awb_otomatis") {
+          return (toNumber(a.awb_otomatis) - toNumber(b.awb_otomatis)) * dir;
+        }
+        if (sortBy === "trend_shipper") return (toNumber(a.trend_shipper) - toNumber(b.trend_shipper)) * dir;
+        if (sortBy === "trend_awb_otomatis") return (toNumber(a.trend_awb_otomatis) - toNumber(b.trend_awb_otomatis)) * dir;
+        // shipper: text
+        return (a.shipper ?? "").localeCompare(b.shipper ?? "") * dir;
+      });
+    }
+    return list;
+  }, [partners, sortBy, sortDir, cityFilter, periodStartFilter, periodEndFilter]);
+
+  const toggleSort = (col: NonNullable<typeof sortBy>) => {
+    if (sortBy !== col) {
+      setSortBy(col);
+      setSortDir("desc");
+    } else if (sortDir === "desc") {
+      setSortDir("asc");
+    } else {
+      setSortBy(null);
+    }
+  };
+
+  const SortIcon = ({ col }: { col: NonNullable<typeof sortBy> }) => {
+    if (sortBy !== col) return <ArrowUpDown size={11} className="opacity-40" />;
+    return sortDir === "desc" ? <ArrowDown size={11} /> : <ArrowUp size={11} />;
+  };
+
   return (
     <div className="max-w-6xl mx-auto w-full px-6 md:px-12 py-8 md:py-14">
       <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
@@ -99,28 +153,96 @@ function PartnersPage() {
         </div>
       </div>
 
+      {/* Filters bar */}
+      <div className="flex items-center gap-2 flex-wrap mb-3 text-xs">
+        <div className="inline-flex items-center gap-1.5">
+          <span className="text-muted-foreground">City</span>
+          <select
+            value={cityFilter}
+            onChange={(e) => setCityFilter(e.target.value)}
+            className="bg-background border border-border rounded px-2 py-1 outline-none"
+          >
+            <option value="">All cities</option>
+            {cities.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div className="inline-flex items-center gap-1.5">
+          <span className="text-muted-foreground">Period from</span>
+          <input
+            type="date"
+            value={periodStartFilter}
+            onChange={(e) => setPeriodStartFilter(e.target.value)}
+            className="bg-background border border-border rounded px-2 py-1 outline-none"
+          />
+          <span className="text-muted-foreground">to</span>
+          <input
+            type="date"
+            value={periodEndFilter}
+            onChange={(e) => setPeriodEndFilter(e.target.value)}
+            className="bg-background border border-border rounded px-2 py-1 outline-none"
+          />
+        </div>
+        {(cityFilter || periodStartFilter || periodEndFilter || sortBy) && (
+          <button
+            onClick={() => {
+              setCityFilter("");
+              setPeriodStartFilter("");
+              setPeriodEndFilter("");
+              setSortBy(null);
+            }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded border border-border hover:bg-[var(--hover-bg)] text-muted-foreground"
+          >
+            <X size={11} /> Clear
+          </button>
+        )}
+        <span className="ml-auto text-muted-foreground">
+          {visible.length} of {partners.length}
+        </span>
+      </div>
+
       <div className="border border-border rounded-md overflow-hidden overflow-x-auto">
-        <table className="w-full text-sm min-w-[1100px]">
+        <table className="w-full text-sm min-w-[1300px]">
           <thead className="text-xs text-muted-foreground bg-[var(--sidebar-bg)]">
             <tr>
               <th className="text-left font-normal px-3 py-2">External Store Name</th>
               <th className="text-left font-normal px-3 py-2">City</th>
-              <th className="text-left font-normal px-3 py-2">Shipper</th>
-              <th className="text-left font-normal px-3 py-2">Trend Shipper</th>
-              <th className="text-right font-normal px-3 py-2">AWB Otomatis</th>
-              <th className="text-left font-normal px-3 py-2">Trend AWB Oto.</th>
+              <th className="text-left font-normal px-3 py-2">
+                <button onClick={() => toggleSort("shipper")} className="inline-flex items-center gap-1 hover:text-foreground">
+                  Shipper <SortIcon col="shipper" />
+                </button>
+              </th>
+              <th className="text-left font-normal px-3 py-2">
+                <button onClick={() => toggleSort("trend_shipper")} className="inline-flex items-center gap-1 hover:text-foreground">
+                  Trend Shipper <SortIcon col="trend_shipper" />
+                </button>
+              </th>
+              <th className="text-right font-normal px-3 py-2">
+                <button onClick={() => toggleSort("awb_otomatis")} className="inline-flex items-center gap-1 hover:text-foreground ml-auto">
+                  AWB Otomatis <SortIcon col="awb_otomatis" />
+                </button>
+              </th>
+              <th className="text-left font-normal px-3 py-2">
+                <button onClick={() => toggleSort("trend_awb_otomatis")} className="inline-flex items-center gap-1 hover:text-foreground">
+                  Trend AWB Oto. <SortIcon col="trend_awb_otomatis" />
+                </button>
+              </th>
               <th className="text-right font-normal px-3 py-2">AWB Manual</th>
               <th className="text-left font-normal px-3 py-2">Owner</th>
+              <th className="text-left font-normal px-3 py-2">Period</th>
               <th className="text-left font-normal px-3 py-2">Longlat</th>
               <th className="w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading ? (
-              [0,1,2].map((i) => (<tr key={i}><td colSpan={10} className="p-3"><div className="h-5 bg-muted animate-pulse rounded" /></td></tr>))
-            ) : partners.length === 0 ? (
-              <tr><td colSpan={10} className="p-8 text-center text-sm text-muted-foreground">No partners yet. Click <strong>New partner</strong> to add one.</td></tr>
-            ) : partners.map((p) => (
+              [0,1,2].map((i) => (<tr key={i}><td colSpan={11} className="p-3"><div className="h-5 bg-muted animate-pulse rounded" /></td></tr>))
+            ) : visible.length === 0 ? (
+              <tr><td colSpan={11} className="p-8 text-center text-sm text-muted-foreground">
+                {partners.length === 0 ? <>No partners yet. Click <strong>New partner</strong> to add one.</> : "No partners match these filters."}
+              </td></tr>
+            ) : visible.map((p) => (
               <tr key={p.id} className="hover:bg-[var(--hover-bg)] group">
                 <td className="px-3 py-2 font-medium">
                   <InlineEdit value={p.name} onSave={(v) => update(p.id, { name: v })} />
@@ -173,6 +295,23 @@ function PartnersPage() {
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">
                   <InlineEdit value={p.owner ?? ""} onSave={(v) => update(p.id, { owner: v })} placeholder="—" />
+                </td>
+                <td className="px-3 py-2 text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="date"
+                      value={p.period_start ?? ""}
+                      onChange={(e) => update(p.id, { period_start: e.target.value || null })}
+                      className="bg-transparent text-xs rounded px-1 hover:bg-[var(--hover-bg)] outline-none"
+                    />
+                    <span className="text-muted-foreground/60">→</span>
+                    <input
+                      type="date"
+                      value={p.period_end ?? ""}
+                      onChange={(e) => update(p.id, { period_end: e.target.value || null })}
+                      className="bg-transparent text-xs rounded px-1 hover:bg-[var(--hover-bg)] outline-none"
+                    />
+                  </div>
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">
                   {p.longlat ? (
