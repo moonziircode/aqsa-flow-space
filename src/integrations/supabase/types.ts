@@ -84,6 +84,8 @@ export type Database = {
           longlat: string | null
           name: string
           owner: string | null
+          period_end: string | null
+          period_start: string | null
           shipper: string | null
           trend_awb_otomatis: string | null
           trend_shipper: string | null
@@ -98,6 +100,8 @@ export type Database = {
           longlat?: string | null
           name: string
           owner?: string | null
+          period_end?: string | null
+          period_start?: string | null
           shipper?: string | null
           trend_awb_otomatis?: string | null
           trend_shipper?: string | null
@@ -112,6 +116,8 @@ export type Database = {
           longlat?: string | null
           name?: string
           owner?: string | null
+          period_end?: string | null
+          period_start?: string | null
           shipper?: string | null
           trend_awb_otomatis?: string | null
           trend_shipper?: string | null
