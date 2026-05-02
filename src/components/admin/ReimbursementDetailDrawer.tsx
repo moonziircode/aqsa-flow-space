@@ -35,6 +35,9 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
     return () => document.removeEventListener("keydown", onKey);
   }, [row, onClose]);
 
+  // IMPORTANT: call all hooks before any early return to keep hook order stable.
+  const receiptUrl = useSignedUrl("receipts", row?.receipt_image_url);
+
   if (!row) return null;
 
   const createdLabel = (() => {
@@ -80,8 +83,6 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
       setUploading(false);
     }
   };
-
-  const receiptUrl = useSignedUrl("receipts", row.receipt_image_url);
 
   return (
     <div className="fixed inset-0 z-50 flex">
