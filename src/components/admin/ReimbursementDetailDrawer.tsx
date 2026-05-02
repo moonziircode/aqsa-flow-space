@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Camera, Trash2, Save, Receipt } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import type { Reimbursement } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { EditablePillSelect } from "@/components/ui-extras/EditablePillSelect";
@@ -36,6 +36,16 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
   }, [row, onClose]);
 
   if (!row) return null;
+
+  const createdLabel = (() => {
+    try {
+      if (!row.created_at) return "";
+      const d = parseISO(row.created_at);
+      return isValid(d) ? format(d, "d MMM yyyy") : "";
+    } catch {
+      return "";
+    }
+  })();
 
   const dirty =
     descDraft !== (row.description ?? "") || Number(amountDraft) !== Number(row.amount ?? 0);
@@ -81,8 +91,12 @@ export function ReimbursementDetailDrawer({ row, onClose, onUpdate, onDelete }: 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Receipt size={12} />
             <span>Reimbursement</span>
-            <span>·</span>
-            <span>{format(parseISO(row.created_at), "d MMM yyyy")}</span>
+            {createdLabel && (
+              <>
+                <span>·</span>
+                <span>{createdLabel}</span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1">
             <button
