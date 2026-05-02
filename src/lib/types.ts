@@ -27,6 +27,8 @@ export type Partner = {
   awb_manual: number | null;
   owner: string | null;
   longlat: string | null;
+  period_start: string | null;
+  period_end: string | null;
 };
 
 export type Insight = {
